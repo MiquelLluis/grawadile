@@ -301,13 +301,20 @@ def reconstruct_omp(x, dico, nonzeros, norm=True):
     return clas
 
 
-def recursive_reconstruct(dico, x, step=None, threshold=1e-2, maxiter=1000, full_out=False):
-    """Get the final reconstruction by recursively reconstructing the residual
+def recursive_reconstruct(dico, x, step=None, threshold=None, maxiter=1000, full_out=False):
+    """
+    Get the final reconstruction by recursively reconstructing the residual
     signal from the previous reconstruction:
+
         rec[n] = reconstruct(residual[n-1])
         residual[n] = residual[n-1] - rec[n]
+
+    Keyword argumetns with default to 'None' need to be specified.
     
     """
+    if None in (step, threshold):
+        raise ValueError("Keyword arguments which default to 'None' need to be specified.")
+
     rec_total = np.zeros_like(x)
     residual = x.copy()
     residual_prev = np.zeros_like(residual)
@@ -318,6 +325,7 @@ def recursive_reconstruct(dico, x, step=None, threshold=1e-2, maxiter=1000, full
         residual_prev = residual.copy()
         residual -= rec_partial
         iter_ += 1
+    
     return (rec_total, residual) if full_out else rec_total
 
 
