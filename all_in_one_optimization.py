@@ -204,34 +204,34 @@ def optimum_lambda_reconstruct(dico, x, wave_pos=None, patch_size=512,
     if wave_pos is not None:
         wave_pos = slice(*wave_pos)
     
-    clean = None  # Modified by 'fun2min'. It will hold the final reconstruction.
+    clean = None  # Modified by 'cost'. It will hold the final reconstruction.
     
     # The minimization is performed in logarithmic scale for performance
     # and precision reasons.
-    fun2min_maxmin = len(x) // patch_size  # (max - min) value of fun2min
+    cost_maxmin = len(x) // patch_size  # (max - min) value of cost
     loglambda_min, loglambda_maxmin = kwargs_minimize_scalar['bounds']
     loglambda_maxmin -= loglambda_min
 
-    def fun2min(log_lambda):
+    def cost(log_lambda):
         """Function to be minimized."""
         nonlocal clean
         
         log_lambda = float(log_lambda)  # in case a 1d-array given
         lambda_ = 10 ** log_lambda
-        print_logg(f"fun2min evaluating {lambda_} ...")
+        print_logg(f"cost evaluating {lambda_} ...")
         
         dico.sc_lambda = lambda_
         clean = recursive_reconstruct(dico, x, **kwargs_recursive_reconstruct)
         
         if not np.any(clean):
             # Too-high-lambda controlling condition. See doc above.
-            result = fun2min_maxmin / loglambda_maxmin * (log_lambda - loglambda_min)
+            result = cost_maxmin / loglambda_maxmin * (log_lambda - loglambda_min)
         else:
             result = loss_function(x[wave_pos], clean[wave_pos], patch_size)
 
         return result
 
-    res = sp.optimize.minimize_scalar(fun2min, **kwargs_minimize_scalar)
+    res = sp.optimize.minimize_scalar(cost, **kwargs_minimize_scalar)
 
     return (clean, res)
 
