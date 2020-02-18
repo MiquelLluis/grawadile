@@ -88,7 +88,7 @@ HYPER_PARAMETERS = (
         'l_atoms_den': (64, 128, 256, 512, 1024),
         'n_atoms_den': (256, 512, 1024, 2048, 4096),
         # Other
-        'step': 
+        'step': 8
     },
     # # Step 2
     # {
@@ -337,8 +337,8 @@ def save_json(file, object_):
 ###############################################################################
 
 def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
-        n_atoms_den=None, l_atoms_den=None, lambda_learn=None, iters_learn=None,
-        n_patches_learn=None, patch_min_frac=None, batch_size=None, random_state=None, **_):
+        n_atoms_den=None, l_atoms_den=None, lambda_learn=None, step=None, iters_learn=None,
+        n_patches_learn=None, patch_min_frac=None, batch_size=None, random_state=None):
     """
     Double optimization of the number and lenght of the atoms of the learned
     dictionaries.
