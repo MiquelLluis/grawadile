@@ -30,7 +30,7 @@ import time
 import numpy as np
 import pandas as pd
 import spams
-import tqdm
+# import tqdm
 import scipy as sp
 import scipy.signal
 import sklearn
@@ -49,10 +49,8 @@ KOIFISH = KF = 1
 WHISTLE = WI = 2
 LOST = 3
 WF = {KOIFISH: "koifish", WHISTLE: "whistle"}
-KWF = (KOIFISH, WHISTLE)
 NWF = 2
 FS = 2**14  # Hz
-TS = 1 / FS
 GL_LENGTH = 4 * FS
 N_KOIFISH = 950  # initially 1000, but some had to be removed due to other noise sources
 N_WHISTLE = 230  # initially 320, '' '' '' 
@@ -88,11 +86,14 @@ HYPER_PARAMETERS = (
         **HYPER_PARAMETERS_BASE,
         # To be optimized:
         'l_atoms_den': (64, 128, 256, 512, 1024),
-        'n_atoms_den': (256, 512, 1024, 2048, 4096)
+        'n_atoms_den': (256, 512, 1024, 2048, 4096),
+        # Other
+        'step': 
     },
     # # Step 2
     # {
-    #     # To optimize:
+    #     **HYPER_PARAMETERS_BASE,
+    #     # To be optimized:
     #     'lambda_learn': {KF: 0.005, WI: 0.1}
     # }
 )
