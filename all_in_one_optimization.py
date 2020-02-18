@@ -243,6 +243,15 @@ def optimum_reconstruct(dico, x, tol=1e-3, step=1, method=None, wave_pos=None, b
     return (clean, res)
 
 
+def print_logg(msg, level='info'):
+    """Print and send to logging.info a message 'msg'."""
+    print(msg)
+    if level == 'info':
+        logging.info(msg)
+    else:
+        raise ValueError("Invalid logging level.")
+
+
 def random_save(obj, compress=False, **kwargs):
     """Save an object to a file with a random name.
 
@@ -363,9 +372,7 @@ def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
     for [iwf, kwf], [iln, ln] in itertools.product(enumerate(WF), enumerate(ln_grid)):
         l_atoms, n_atoms = ln
 
-        msg = f"Training {WF[kwf]} dico {l_atoms} x {n_atoms}"
-        print(msg)
-        logging.info(msg)
+        print_logg(f"Training {WF[kwf]} dico {l_atoms} x {n_atoms}")
 
         # Generate the initial dictionary and the set of training patches.
         if l_atoms != l_atoms_prev:
@@ -404,9 +411,7 @@ def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
         dicos[iwf,iln] = dico
         save_temporal_progress(F_SAVED_TMP_PROGRESS, dicos=dicos)
 
-    msg = f"Training completed in {datetime.timedelta(seconds=time.time()-time0)}"
-    print(msg)
-    logging.info(msg)
+    print_logg(f"Training completed in {datetime.timedelta(seconds=time.time()-time0)}")
 
     #
     # Denoising reconstructions: optimize lambda_rec and get the p-values.
@@ -451,8 +456,8 @@ def main():
         datefmt='%H:%M:%S',
         level=logging.DEBUG
     )
-    logging.info("#"*79)
-    logging.info("ALL IN ONE OPTIMIZATION.py")
+    print_logg("#"*79)
+    print_logg("ALL IN ONE OPTIMIZATION.py")
     
     # LOAD DATA
 
