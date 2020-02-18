@@ -193,8 +193,8 @@ def loss_function(a, b, patch_size=512):
     return loss  # Maximize P-Value
 
 
-def optimum_reconstruct(dico, x, tol=1e-3, step=1, method=None, wave_pos=None, bounds=None,
-        patch_size=512, threshold=1e-2):
+def optimum_lambda_reconstruct(dico, x, wave_pos=None, patch_size=512,
+        kwargs_recursive_reconstruct, kwargs_minimize_scalar):
     """
     Optimum reconstruction according to a loss function in terms of the
     regularization parameter.
@@ -209,36 +209,29 @@ def optimum_reconstruct(dico, x, tol=1e-3, step=1, method=None, wave_pos=None, b
     # The minimization is performed in logarithmic scale for performance
     # and precision reasons.
     fun2min_maxmin = len(x) // patch_size  # (max - min) value of fun2min
-    logl_min = bounds[0]
-    logl_maxmin = bounds[1] - logl_min
+    loglambda_min, loglambda_maxmin = kwargs_minimize_scalar['bounds']
+    loglambda_maxmin -= loglambda_min
+
     def fun2min(log_lambda):
         """Function to be minimized."""
         nonlocal clean
         
         log_lambda = float(log_lambda)  # in case a 1d-array given
         lambda_ = 10 ** log_lambda
-        print(f"fun2min evaluating {lambda_} ...")
+        print_logg(f"fun2min evaluating {lambda_} ...")
         
         dico.sc_lambda = lambda_
-        clean = recursive_reconstruct(
-            dico,
-            x,
-            step=step,
-            threshold=threshold
-        )
+        clean = recursive_reconstruct(dico, x, **kwargs_recursive_reconstruct)
         
         if not np.any(clean):
             # Too-high-lambda controlling condition. See doc above.
-            return fun2min_maxmin / logl_maxmin * (log_lambda - logl_min)
+            result = fun2min_maxmin / loglambda_maxmin * (log_lambda - loglambda_min)
         else:
-            return loss_function(x[wave_pos], clean[wave_pos], patch_size)
+            result = loss_function(x[wave_pos], clean[wave_pos], patch_size)
 
-    res = sp.optimize.minimize_scalar(
-        fun2min,
-        method=method,
-        bounds=bounds,
-        options={'xatol': tol}
-    )
+        return result
+
+    res = sp.optimize.minimize_scalar(fun2min, **kwargs_minimize_scalar)
 
     return (clean, res)
 
