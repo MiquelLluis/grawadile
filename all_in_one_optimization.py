@@ -252,7 +252,7 @@ def print_logg(msg, level='info'):
         raise ValueError("Invalid logging level.")
 
 
-def random_save(obj, compress=False, **kwargs):
+def random_save(obj, prefix=None, suffix=None, dir=None, compress=False, **kwargs_tempfile):
     """Save an object to a file with a random name.
 
     Save 'obj' using Pickle to a (permanent) file named with random characters
@@ -276,7 +276,8 @@ def random_save(obj, compress=False, **kwargs):
         Name of the file.
 
     """
-    with tempfile.NamedTemporaryFile(delete=False, **kwargs) as file:
+    with tempfile.NamedTemporaryFile(prefix=prefix, suffix=suffix, dir=dir, delete=False,
+            **kwargs_tempfile) as file:
         if compress:
             with gzip.open(file, 'wb') as gfile:
                 pickle.dump(obj, gfile)
