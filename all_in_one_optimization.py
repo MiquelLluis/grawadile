@@ -193,7 +193,7 @@ def loss_function(a, b, patch_size=512):
     return loss  # Maximize P-Value
 
 
-def optimum_reconstruct(dico, x0, x1, tol=1e-3, step=1, method=None, wave_pos=None, bounds=None,
+def optimum_reconstruct(dico, x, tol=1e-3, step=1, method=None, wave_pos=None, bounds=None,
         patch_size=512, threshold=1e-2):
     """
     Optimum reconstruction according to a loss function in terms of the
@@ -208,7 +208,7 @@ def optimum_reconstruct(dico, x0, x1, tol=1e-3, step=1, method=None, wave_pos=No
     
     # The minimization is performed in logarithmic scale for performance
     # and precision reasons.
-    fun2min_maxmin = len(x0) // patch_size  # (max - min) value of fun2min
+    fun2min_maxmin = len(x) // patch_size  # (max - min) value of fun2min
     logl_min = bounds[0]
     logl_maxmin = bounds[1] - logl_min
     def fun2min(log_lambda):
@@ -222,7 +222,7 @@ def optimum_reconstruct(dico, x0, x1, tol=1e-3, step=1, method=None, wave_pos=No
         dico.sc_lambda = lambda_
         clean = recursive_reconstruct(
             dico,
-            x1,
+            x,
             step=step,
             threshold=threshold
         )
@@ -231,7 +231,7 @@ def optimum_reconstruct(dico, x0, x1, tol=1e-3, step=1, method=None, wave_pos=No
             # Too-high-lambda controlling condition. See doc above.
             return fun2min_maxmin / logl_maxmin * (log_lambda - logl_min)
         else:
-            return loss_function(x0[wave_pos], clean[wave_pos], patch_size)
+            return loss_function(x[wave_pos], clean[wave_pos], patch_size)
 
     res = sp.optimize.minimize_scalar(
         fun2min,
