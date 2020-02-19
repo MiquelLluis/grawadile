@@ -149,24 +149,26 @@ def load_temporal_progress(file):
     return objects
 
 
-def loss_function(a, b, patch_size=512):
-    """
-    Loss function defined to measure how well the reconstructed glitch in 'b'
-    takes out the original glitch embeded in noise in 'a'.
+def loss_function_gaussianity(original, reconstructed, patch_size=512):
+    """Loss function between two signals, based on the normality test.
+    
+    Loss function defined to measure how well the reconstructed glitch in
+    'reconstructed' takes out the original glitch embeded in noise in
+    'original'.
 
     This is done by performing the normality test of the residual between the
-    original signal 'a' and the reconstructed glitch 'b'. The more gaussian,
-    the better the glitch was reconstructed.
+    original signal 'original' and the reconstructed glitch 'reconstructed'.
+    The more gaussian, the better the glitch was reconstructed.
 
     The more long the array is, the smaller the P-value will be, because the
     component of the glitch will also be smaller compared to the whitened
-    noise. Therefore we split the residual (a - b) into small patches, compute
-    the normality test over these ones and add up all the P-values.
-    After some tests, a reasonable value seemed to be 512 samples.
+    noise. Therefore we split the residual (a - reconstructed) into small
+    patches, compute the normality test over these ones and add up all the
+    P-values. After some tests, a reasonable value seemed to be 512 samples.
 
     PARAMETERS
     ----------
-    a, b: array-like
+    original, reconstructed: array-like
         Original signal and reconstructed glitch, respectively. Must be of the
         same length.
     patch_size: int
@@ -176,12 +178,13 @@ def loss_function(a, b, patch_size=512):
     RESULTS
     -------
     loss: float
-        Computed loss between 'a' and 'b'. The lower, the more gaussian the
-        residual is, the better 'b' was reconstructed.
-        Range: from 0 to -nx/patch_size .
+        Computed loss between 'original' and 'reconstructed'. The lower, the
+        more gaussian the residual is, the better 'reconstructed' was
+        reconstructed.
+        Range: from 0 to -nx/patch_size (i.e. the number of patches).
 
     """
-    x = a - b
+    x = original - reconstructed
     nx = len(x)
     loss = 0
     for i in range(0, nx, patch_size):
@@ -225,7 +228,7 @@ def optimum_lambda_reconstruct(dico, x, wave_pos=None, patch_size=512,
             # Too-high-lambda controlling condition. See doc above.
             result = cost_maxmin / loglambda_maxmin * (log_lambda - loglambda_min)
         else:
-            result = loss_function(x[wave_pos], clean[wave_pos], patch_size)
+            result = loss_function_gaussianity(x[wave_pos], clean[wave_pos], patch_size)
 
         return result
 
