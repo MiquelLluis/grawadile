@@ -1,16 +1,14 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-#   all_in_one_optimization.py
-#
-#   Run all tests from the Glitch Classification O1 Extended notebook to
-#   optimize all the hyper-parameters of the classification algorithm.
-#
-#
-#   Author:  Miquel Lluís Llorens Monteagudo <millomon@alumni.uv.es>
-#
+"""
+all_in_one_optimization.py
+
+Run all tests from the Glitch Classification O1 Extended notebook to
+optimize all the hyper-parameters of the classification algorithm.
 
 
+Author:  Miquel Lluís Llorens Monteagudo <millomon@alumni.uv.es>
+
+"""
 import copy
 import datetime
 import gzip
