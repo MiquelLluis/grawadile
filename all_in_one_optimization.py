@@ -120,6 +120,55 @@ F_SAVED_TMP_PROGRESS = PATH_MAIN / 'saved_tmp_progress.pkl'
 #
 ###############################################################################
 
+def cost_function_recursive_gaussianity(dico, x, bounds, wave_pos=None, verbose=False):
+    """Returns a cost function in terms of the regularization parameter.
+
+    Returns the cost function of the recursive reconstruction with respect to
+    the original signal 'x', performed by a dictionary 'dico', in terms of its
+    regularization parameter 'lambda_'.
+    It also returns a list 'clean' which will hold the last recursive
+    reconstruction performed by 'cost_function', useful after a minimization
+    process in order to avoid having to reconstruct again the original signal
+    with the optimized 'lambda_'.
+
+    From an unknown value of 'lambda_' the dictionary will only produce zeros,
+    which makes the loss function constant. In order to avoid issues with some
+    minimization algorithms, in this case it does a linear extrapolation using
+    the value of the loss function as its 'right-most' value.
+
+    """
+    if wave_pos is None:
+        wave_pos = slice(None)
+
+    # Components of the extrapolation:
+    x_section = x[wave_pos]
+    cost_zero_clean = loss_function_gaussianity(x_section, np.zeros_like(x_section))
+    coef_a = cost_zero_clean / (bounds[1] - bounds[0])
+    coef_b = -bounds[0] * coef_a
+
+    clean = [None]  # Modified by 'cost'. It will hold the final reconstruction.
+
+    def cost_function(lambda_):
+        lambda_ = float(lambda_)  # in case a 1d-array given
+        dico.sc_lambda = lambda_
+
+        if verbose:
+            print_logg(f"Cost function evaluating {lambda_} ...")
+
+        clean_ = recursive_reconstruct(dico, x, **kwargs_recursive_reconstruct)
+        clean[0] = clean_
+        
+        if np.any(clean_):
+            result = loss_function_gaussianity(x_section, clean_[wave_pos])
+        else:
+            # Too-high-lambda controlling condition. See doc above.
+            result = lambda_ * coef_a + coef_b
+            
+        return result
+
+    return cost_function, clean
+
+
 def crop_center_1d(x, length, copy=False, axis=-1):
     """Returns 'x' cropped to the final 'length' along 'axis'."""
     x = np.asarray(x)
@@ -151,7 +200,7 @@ def load_temporal_progress(file):
 
 def loss_function_gaussianity(original, reconstructed, patch_size=512):
     """Loss function between two signals, based on the normality test.
-    
+
     Loss function defined to measure how well the reconstructed glitch in
     'reconstructed' takes out the original glitch embeded in noise in
     'original'.
@@ -192,49 +241,6 @@ def loss_function_gaussianity(original, reconstructed, patch_size=512):
     loss *= -1
 
     return loss  # Maximize P-Value
-
-
-def optimum_lambda_reconstruct(dico, x, wave_pos=None, patch_size=512,
-        kwargs_recursive_reconstruct, kwargs_minimize_scalar):
-    """
-    Optimum reconstruction according to a loss function in terms of the
-    regularization parameter.
-
-    """
-
-    if wave_pos is not None:
-        wave_pos = slice(*wave_pos)
-    
-    clean = None  # Modified by 'cost'. It will hold the final reconstruction.
-    
-    # The minimization is performed in logarithmic scale for performance
-    # and precision reasons.
-    cost_maxmin = len(x) // patch_size  # (max - min) value of cost
-    loglambda_min, loglambda_maxmin = kwargs_minimize_scalar['bounds']
-    loglambda_maxmin -= loglambda_min
-
-    def cost(log_lambda):
-        """Function to be minimized."""
-        nonlocal clean
-        
-        log_lambda = float(log_lambda)  # in case a 1d-array given
-        lambda_ = 10 ** log_lambda
-        print_logg(f"cost evaluating {lambda_} ...")
-        
-        dico.sc_lambda = lambda_
-        clean = recursive_reconstruct(dico, x, **kwargs_recursive_reconstruct)
-        
-        if not np.any(clean):
-            # Too-high-lambda controlling condition. See doc above.
-            result = cost_maxmin / loglambda_maxmin * (log_lambda - loglambda_min)
-        else:
-            result = loss_function_gaussianity(x[wave_pos], clean[wave_pos], patch_size)
-
-        return result
-
-    res = sp.optimize.minimize_scalar(cost, **kwargs_minimize_scalar)
-
-    return (clean, res)
 
 
 def print_logg(msg, level='info'):
