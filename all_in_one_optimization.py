@@ -8,6 +8,12 @@ optimize all the hyper-parameters of the classification algorithm.
 
 Author:  Miquel Lluís Llorens Monteagudo <millomon@alumni.uv.es>
 
+
+TODO
+----
+- Finish check over all the module (lost changes last friday)
+- Finish step 1
+
 """
 import copy
 import datetime
@@ -28,7 +34,6 @@ import time
 import numpy as np
 import pandas as pd
 import spams
-# import tqdm
 import scipy as sp
 import scipy.signal
 import sklearn
