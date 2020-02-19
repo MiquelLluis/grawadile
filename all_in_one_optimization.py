@@ -308,23 +308,23 @@ def recursive_reconstruct(dico, x, step=None, threshold=None, maxiter=1000, full
     if None in (step, threshold):
         raise ValueError("Keyword arguments which default to 'None' need to be specified.")
 
-    rec_total = np.zeros_like(x)
+    reconstruction = np.zeros_like(x)
     residual = x.copy()
-    iter_ = 0
+    iterations = 0
     keep_going = True
 
     while keep_going:
-        rec_partial = dico.reconstruct(residual, step=step, norm=False)
-        rec_total += rec_partial
+        partial = dico.reconstruct(residual, step=step, norm=False)
+        reconstruction += partial
         residual_prev = residual.copy()
-        residual -= rec_partial
-        iter_ += 1
+        residual -= partial
+        iterations += 1
 
-        keep_going = (rec_partial.any()
-            and iter_ < maxiter
+        keep_going = (partial.any()
+            and iterations < maxiter
             and np.linalg.norm(residual - residual_prev) > threshold)
     
-    return (rec_total, residual) if full_out else rec_total
+    return (reconstruction, residual) if full_out else reconstruction
 
 
 def save_results(results):
