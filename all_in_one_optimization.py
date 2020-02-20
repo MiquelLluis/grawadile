@@ -67,7 +67,7 @@ HYPER_PARAMETERS_BASE = {
     # Trained dictionaries
     'l_atoms_den': None,
     'n_atoms_den': None,
-    'lambda_learn': {KF: 0.005, WI: 0.1},
+    'lambda_learn': {KF: 0.05, WI: 0.05},
     'iters_learn': 100_000,
     'n_patches_learn': 100_000,
     'batch_size': 4,
