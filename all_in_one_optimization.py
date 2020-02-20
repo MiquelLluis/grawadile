@@ -376,7 +376,7 @@ def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
     dictionaries.
 
     """
-    logging.info("Executing optimization step 1.")
+    print_logg("Executing optimization step 1.")
 
     ln_grid = []
     for l_atoms, n_atoms in itertools.product(l_atoms_den, n_atoms_den):
