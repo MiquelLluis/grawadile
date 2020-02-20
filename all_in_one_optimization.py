@@ -177,11 +177,13 @@ def cost_function_recursive_gaussianity(dico, x, bounds, wave_pos=None, verbose=
 def crop_center_1d(x, length, copy=False, axis=-1):
     """Returns 'x' cropped to the final 'length' along 'axis'."""
     x = np.asarray(x)
+    
     p0 = (x.shape[axis] - length) // 2
     p1 = p0 + length
     slc = [slice(None)] * len(x.shape)
     slc[axis] = slice(p0, p1)
     slc = tuple(slc)
+
     return x[slc] if not copy else x[slc].copy()  
 
 
