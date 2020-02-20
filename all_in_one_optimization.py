@@ -62,43 +62,24 @@ N_WHISTLE_TRAIN = 136  # 60%
 N_KOIFISH_CVT = 190  # CV and Test: 20% each
 N_WHISTLE_CVT = 46  # CV and Test: 20% each
 
-# Initial hyper-parameters:
-HYPER_PARAMETERS_BASE = {
-    # Trained dictionaries
-    'l_atoms_den': None,
-    'n_atoms_den': None,
-    'lambda_learn': {KF: 0.05, WI: 0.05},
-    'iters_learn': 50_000,
-    'n_patches_learn': 50_000,
-    'batch_size': 4,
-    # Untrained dictionaries
-    'l_atoms_clas_frac': None,  # TODO: With respect to what was it?
-    'l_atoms_clas': GL_LENGTH,
-    'n_atoms_clas_frac': None,  # TODO: With respect to what was it?
-    'n_atoms_clas': {KF: N_KOIFISH_CVT, WI: N_WHISTLE_CVT},
-    # Other
-    'patch_min': None,  # Minimum samples of a signal to include in a patch
-    'patch_min_frac': 0.5,  # Fraction in terms of the atom's length.
-    'random_state': 42
-}
 # All the hyper-parameters of each step. Some of them will be modified (in a
 # copy) as they are optimized by the step functions.
 HYPER_PARAMETERS = (
     # Step 1
     {
-        **HYPER_PARAMETERS_BASE,
         # To be optimized:
         'l_atoms_den': (64, 128, 256, 512, 1024),
         'n_atoms_den': (256, 512, 1024, 2048, 4096),
+        # Trained dictionaries
+        'lambda_learn': {KF: 0.05, WI: 0.05},
+        'iters_learn': 50_000,
+        'n_patches_learn': 50_000,
+        'batch_size': 4,
         # Other
-        'step': 8
+        'step': 8,
+        'patch_min_frac': 0.5,  # Fraction in terms of the atom's length.
+        'random_state': 42
     },
-    # # Step 2
-    # {
-    #     **HYPER_PARAMETERS_BASE,
-    #     # To be optimized:
-    #     'lambda_learn': {KF: 0.005, WI: 0.1}
-    # }
 )
 
 PATH_O1 = pathlib.Path('data/O1/')
@@ -369,8 +350,8 @@ def save_json(file, object_):
 ###############################################################################
 
 def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
-        n_atoms_den=None, l_atoms_den=None, lambda_learn=None, step=None, iters_learn=None,
-        n_patches_learn=None, patch_min_frac=None, batch_size=None, random_state=None):
+        l_atoms_den=None, n_atoms_den=None, lambda_learn=None, iters_learn=None,
+        n_patches_learn=None, batch_size=None, patch_min_frac=None, step=None, random_state=None):
     """
     Double optimization of the number and lenght of the atoms of the learned
     dictionaries.
