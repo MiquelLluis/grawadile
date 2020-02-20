@@ -68,8 +68,8 @@ HYPER_PARAMETERS_BASE = {
     'l_atoms_den': None,
     'n_atoms_den': None,
     'lambda_learn': {KF: 0.05, WI: 0.05},
-    'iters_learn': 100_000,
-    'n_patches_learn': 100_000,
+    'iters_learn': 50_000,
+    'n_patches_learn': 50_000,
     'batch_size': 4,
     # Untrained dictionaries
     'l_atoms_clas_frac': None,  # TODO: With respect to what was it?
