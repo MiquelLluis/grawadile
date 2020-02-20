@@ -131,10 +131,12 @@ def cost_function_recursive_gaussianity(dico, x, bounds, wave_pos=None, verbose=
     Returns the cost function of the recursive reconstruction with respect to
     the original signal 'x', performed by a dictionary 'dico', in terms of its
     regularization parameter 'lambda_'.
+    
     It also returns a list 'clean' which will hold the last recursive
-    reconstruction performed by 'cost_function', useful after a minimization
-    process in order to avoid having to reconstruct again the original signal
-    with the optimized 'lambda_'.
+    reconstruction performed by 'cost_function', passed using Python's list
+    mutability. This is useful after a minimization process in order to avoid
+    having to reconstruct again the original signal with the optimized
+    regularization parameter.
 
     From an unknown value of 'lambda_' the dictionary will only produce zeros,
     which makes the loss function constant. In order to avoid issues with some
@@ -177,7 +179,7 @@ def cost_function_recursive_gaussianity(dico, x, bounds, wave_pos=None, verbose=
 def crop_center_1d(x, length, copy=False, axis=-1):
     """Returns 'x' cropped to the final 'length' along 'axis'."""
     x = np.asarray(x)
-    
+
     p0 = (x.shape[axis] - length) // 2
     p1 = p0 + length
     slc = [slice(None)] * len(x.shape)
