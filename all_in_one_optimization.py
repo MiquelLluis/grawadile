@@ -439,8 +439,8 @@ def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
     p_values = np.empty((len(ln_grid), NWF), dtype=object)
     p_values.fill([])  # Empty lists because the number of glitches is unbalanced
 
-    for [iln, ln], [iwf, kwf] in itertools.product(enumerate(ln_grid), enumerate(WF)):
-        for [igl, glitch] in enumerate(set_cv[kwf]):
+    # for [iln, ln], [iwf, kwf] in itertools.product(enumerate(ln_grid), enumerate(WF)):
+    #     for [igl, glitch] in enumerate(set_cv[kwf]):
             
 
 
