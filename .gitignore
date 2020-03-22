@@ -143,3 +143,6 @@ data/
 *.err
 *.out
 paper_plots
+*.sublime-project
+*.sublime-workspace
+*.zip
