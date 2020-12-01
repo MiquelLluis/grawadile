@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 all_in_one_optimization.py
 
@@ -11,7 +10,6 @@ Author:  Miquel Lluís Llorens Monteagudo <millomon@alumni.uv.es>
 
 TODO
 ----
-- Finish check over all the module (lost changes last friday)
 - Finish step 1
 
 """
@@ -68,8 +66,8 @@ HYPER_PARAMETERS = (
     # Step 1
     {
         # To be optimized:
-        'l_atoms_den': (64, 128, 256, 512, 1024),
-        'n_atoms_den': (256, 512, 1024, 2048, 4096),
+        'l_atoms_den': (64, 256, 1024),
+        'n_atoms_den': (256, 1024, 4096),
         # Trained dictionaries
         'lambda_learn': {KF: 0.05, WI: 0.05},
         'iters_learn': 50_000,
@@ -97,7 +95,7 @@ F_INDEX = PATH_MAIN / 'index.json'
 F_GDB = PATH_GL / 'glitches_database_all.pkl'
 F_GDBS = PATH_MAIN / 'glitches_database_shuffled_all.pkl'
 F_SET = PATH_GL / "whitened_set_all_950,230-koifish-whistle_4length.pkl"
-F_SAVED_TMP_PROGRESS = PATH_MAIN / 'saved_tmp_progress.pkl'
+F_SAVED_TMP_PROGRESS = PATH_MAIN / 'saved_tmp_progress.pkl'  # WILL BE OVERWRITTEN!!!
 
 
 ###############################################################################
@@ -373,8 +371,15 @@ def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
     l_atoms_prev = None
     time0 = time.time()
 
+    pdb.set_trace()  # DEBUG
+
     for [iwf, kwf], [iln, ln] in itertools.product(enumerate(WF), enumerate(ln_grid)):
         l_atoms, n_atoms = ln
+
+        # DEBUG: in case of resuming a previous interrupted instance of this loop
+        if dicos[iwf,iln] is not None:
+            print_logg(f"Skipping training {WF[kwf]} dico {l_atoms} x {n_atoms}")
+            continue
 
         print_logg(f"Training {WF[kwf]} dico {l_atoms} x {n_atoms}")
 
@@ -420,12 +425,20 @@ def optimization_step_1(set_train, set_train_pos, set_cv, set_cv_pos,
     #
     # Denoising reconstructions: optimize lambda_rec and get the p-values.
     #
+    p_values = {
+        KOIFISH: np.zeros((len(ln_grid), N_KOIFISH_CVT), dtype=float),
+        WHISTLE: np.zeros((len(ln_grid), N_WHISTLE_CVT), dtype=float)
+    }
+    reconstructions = {
+        KOIFISH: np.zeros((len(ln_grid), N_KOIFISH_CVT, GL_LENGTH), dtype=float),
+        WHISTLE: np.zeros((len(ln_grid), N_WHISTLE_CVT, GL_LENGTH), dtype=float)
+    }
 
-    p_values = np.empty((len(ln_grid), NWF), dtype=object)
-    p_values.fill([])  # Empty lists because the number of glitches is unbalanced
+    pdb.set_trace()  # DEBUG
 
-    # for [iln, ln], [iwf, kwf] in itertools.product(enumerate(ln_grid), enumerate(WF)):
-    #     for [igl, glitch] in enumerate(set_cv[kwf]):
+    for [iwf, kwf], [iln, ln] in itertools.product(enumerate(WF), enumerate(ln_grid)):
+        for [igl, glitch] in enumerate(set_cv[kwf]):
+            
             
 
 
