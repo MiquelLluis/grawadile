@@ -28,10 +28,10 @@ __version__ = '2018.10.30'
 #  MAIN CLASSES
 # -----------------------------------------------------------------------------
 
-class GlitchDict(MiniBatchDictionaryLearning):
-    """Basic Mini-Batch Dictionary Learning's interface for Glitches.
+class DictionarySklearn(MiniBatchDictionaryLearning):
+    """Basic Mini-Batch Dictionary Learning's interface for waveforms.
 
-    Set of utilities to train glitch dictionaries using the MBDL methods from
+    Set of utilities to train waveform dictionaries using the MBDL methods from
     Scikit-learn package.
 
     Parameters
@@ -45,7 +45,7 @@ class GlitchDict(MiniBatchDictionaryLearning):
         case of being zero-padded. If str, it must be a valid file path to a
         saved dictionary. Other formats available are a Sklearn's MBDL
         instance, and a dict() with all the necessary attributes of an already
-        created GlitchDict (or MBDL) instance.
+        created DictionarySklearn (or MBDL) instance.
 
     n_components : int, optional*
         Number of atoms.
@@ -248,7 +248,7 @@ class GlitchDict(MiniBatchDictionaryLearning):
 
         """
         # TODO: IF USED, THIS FUNCTION NEEDS TO BE UPDATED. SEE THE EQUIVALENT
-        # FUNCTION FROM THE CLASS GlitchDictSpams.
+        # FUNCTION FROM THE CLASS DictionarySpams.
         clean = [None]  # 'trick' for recovering the optimum reconstruction
 
         if wave_pos is None:
@@ -343,7 +343,7 @@ class GlitchDict(MiniBatchDictionaryLearning):
         self.n_train = n_train
 
 
-class GlitchDictSpams:
+class DictionarySpams:
     """Mini-Batch Dictionary Learning interface for SPAMS-python.
 
     Set of utilities for dictionary learning and sparse encoding using the
@@ -361,7 +361,7 @@ class GlitchDictSpams:
         of the initial dictionary, otherwise it must contain an array-like with
         signals from where to extract the atoms and an array-like with the
         [start, end] indices of the signals in pairs.
-        If str, it must be a valid file path to a saved 'GlitchDictSpams'
+        If str, it must be a valid file path to a saved 'DictionarySpams'
         instance.
 
     m : int
@@ -479,7 +479,7 @@ class GlitchDictSpams:
         else:
             _type = type(dict_init).__name__
             raise TypeError(
-                "'%s' is not recognized as an instance of GlitchDictSpams" % _type
+                "'%s' is not recognized as an instance of DictionarySpams" % _type
             )
 
     def train(self, patches, n_iter=None, **kwargs):
@@ -966,12 +966,12 @@ class ConvergenceError(ValueError):
 # ------------------------------------------------------------------------------
 
 def gen_set(sq):
-    """Generates three sets of noise transients, one of each kind of glitch.
+    """Generates three sets of noise transients, one of each kind of waveform.
 
-    Generates 'sq' noise transients for each kind of glitch: Sine Gaussisan,
+    Generates 'sq' noise transients for each kind of waveform: Sine Gaussisan,
     Gaussian, and Ring-Down. The signal length is the same between each
     waveform array, and it is computed with the extremest parameters that
-    maximize the duration of the glitch.
+    maximize the duration of the waveform.
 
     The parameters used for each signal are randomly generated within their
     respective limits, and stored in separated arrays.
@@ -999,7 +999,7 @@ def gen_set(sq):
         inside each signal.
 
     """
-    # Maximum time length (maximum glitch length)
+    # Maximum time length (maximum waveform length)
     mtSG = 2 * LIM0['MQ'] / (pi * LIM0['mf0']) * sqrt(-log(TH))
     mtG = LIM0['MT']
     mtRD = sqrt(2) * LIM0['MQ'] / (pi * LIM0['mf0']) * (-log(TH))
@@ -1060,23 +1060,23 @@ def gen_set(sq):
 def classificate(parents, children):
     """Classification algorithm.
 
-    Method used to classificate a glitch by comparing the similarity of
+    Method used to classificate a waveform by comparing the similarity of
     reconstructions made with different dictionaries.
 
     PARAMETERS
     ----------
-    parents: array_like, (glitches, features)
-        Parent glitches whose indices coincide to their respective morphological
-        families. Each parent glitch will have associated 'len(parents)' children.
+    parents: array_like, (waveforms, features)
+        Parent waveforms whose indices coincide to their respective morphological
+        families. Each parent waveform will have associated 'len(parents)' children.
 
-    children: array_like, (parents, glitches, features)
-        Reconstructions associated with parent glitches.
+    children: array_like, (parents, waveforms, features)
+        Reconstructions associated with parent waveforms.
 
     RETURNS
     -------
     index: int
         Index of the most fitting morphological family (same index as the parent
-        glitch).
+        waveform).
 
     """
     index = np.argmin([
