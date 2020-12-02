@@ -1057,14 +1057,6 @@ def gen_set(sq):
     return (tp, (sigSG, sigG, sigRD), (sigSGp, sigGp, sigRDp))
 
 
-def count_glitches(code, threshold):
-    """NOT VERIFIED NOR USED"""
-    contribution = abs(code).sum(1)
-    count = sum(np.diff(np.where(contribution > threshold)[0]) > 1) + 1
-
-    return count
-
-
 def classificate(parents, children):
     """Classification algorithm.
 
