@@ -1,9 +1,11 @@
 # patches_1D.py
 # Developed by Alejandro Torres <alejandro.torres@uv.es>
+# Modified by Miquel Llorens <miquel.llorens@uv.es>
 
 import numpy as np
 
-from config import *
+from .config import *
+
 
 # PENDING TO REARRANGE TO ROW-MAJOR ORDER
 def slidingWindow(sequence ,winSize ,step=1):
@@ -29,7 +31,6 @@ def slidingWindow(sequence ,winSize ,step=1):
     # Do the work
     for i in range(0 , numOfChunks *step ,step):
         yield int(i), sequence[i: i +winSize]
-
 
 
 # MODIFIED -> To C contiguous NOTATION (M[samples][features])
@@ -93,7 +94,8 @@ def extract_patches_1d(A, patch_size, wave_pos=None, n_patches=-1,
         D /= np.linalg.norm(D, axis=1, keepdims=True)
 
     return D    
-    
+
+
 # REARRANGED TO M[samples][features]
 def reconstruct_from_patches_1d(patches, signal_len):
     n, m = patches.shape
