@@ -18,7 +18,7 @@ import scipy.optimize
 from sklearn.decomposition import MiniBatchDictionaryLearning
 import spams
 
-from . import patches_1D
+from . import patches_1d
 from .config import *  # Global variables (settings, all CAPS)
 
 __version__ = '2018.10.30'
@@ -144,7 +144,7 @@ class GlitchDict(MiniBatchDictionaryLearning):
             # optionally, get the initial components from a set of signals
             if isinstance(dict_init, (tuple, list)):
                 collection, wave_pos = dict_init
-                dict_init = patches_1D.extract_patches_1d(
+                dict_init = patches_1d.extract_patches_1d(
                     collection, l_components, wave_pos, n_components,
                     l2_normed=l2_normed, patch_min=patch_min,
                     random_state=random_state
@@ -305,14 +305,14 @@ class GlitchDict(MiniBatchDictionaryLearning):
             Transformed data, encoded as a sparse combination of atoms.
 
         """
-        patches = patches_1D.extract_patches_1d(
+        patches = patches_1d.extract_patches_1d(
             signal,
             patch_size=self.l_components,
             step=step
         )
         code = self.transform(patches)
         patches = np.dot(code, self.components_)
-        signal_rec = patches_1D.reconstruct_from_patches_1d(patches, len(signal))
+        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, len(signal))
 
         if norm and signal_rec.any():  # Avoids ZeroDivisionError
             coef = 1 / abs(signal_rec).max()
@@ -456,7 +456,7 @@ class GlitchDictSpams:
             collection, wave_pos = dict_init
             # TODO: new function to avoid having to compute the transposed.
             collection = collection.T
-            self.dict_init = patches_1D.extract_patches_1d(
+            self.dict_init = patches_1d.extract_patches_1d(
                 collection, m, wave_pos, n, l2_normed=l2_normed, patch_min=patch_min,
                 random_state=random_state
             )
@@ -668,7 +668,7 @@ class GlitchDictSpams:
             self.sc_lambda = kwargs.pop('sc_lambda')
         signal = np.asarray(signal)
         # TODO: new function to avoid having to 'compute' the transposed
-        patches = patches_1D.extract_patches_1d(
+        patches = patches_1d.extract_patches_1d(
             signal,
             patch_size=len(self.components),
             step=step
@@ -681,7 +681,7 @@ class GlitchDictSpams:
         ).todense()
         patches = np.dot(self.components, code)
         # TODO: new function to avoid having to compute the transposed
-        signal_rec = patches_1D.reconstruct_from_patches_1d(
+        signal_rec = patches_1d.reconstruct_from_patches_1d(
             np.ascontiguousarray(patches.T),  # (p, m) with C-contiguous order
             len(signal)
         )
