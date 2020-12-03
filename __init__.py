@@ -4,11 +4,12 @@
 #
 
 from . import config
+from . import estimators
 from . import dictionary_learning
-from . import glitch_learning
 from . import patches_1d
 from . import rrof_fortran
 from . import util
+from . import waveforms
 
 
 __version__ = '2020.12.03'
