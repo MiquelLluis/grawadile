@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-#
-# glitch_learning.py
-# Developed by Miquel Lluís Llorens Monteagudo <millomon@alumni.uv.es>
-#
-
 import copy
 import gzip
 import os
