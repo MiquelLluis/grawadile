@@ -4,8 +4,6 @@
 
 import numpy as np
 
-from .config import *
-
 
 # PENDING TO REARRANGE TO ROW-MAJOR ORDER
 def slidingWindow(sequence ,winSize ,step=1):
@@ -36,7 +34,7 @@ def slidingWindow(sequence ,winSize ,step=1):
 # MODIFIED -> To C contiguous NOTATION (M[samples][features])
 def extract_patches_1d(A, patch_size, wave_pos=None, n_patches=-1,
                        random_state=0, step=1, l2_normed=False,
-                       patch_min=PATCH_MIN):
+                       patch_min=16):
     # wave_pos -> Beggining and ending indices of each wave in A; 
     #
     n,m = np.atleast_2d(A).shape
