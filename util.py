@@ -29,14 +29,17 @@ def print(*args, dest='both', sep=' ', end='\n', **kw_args):
             bstring = bstring.encode()
         os.write(1, bstring)
 
+
 def register(msg):
     """Register a message into a predefined register file."""
     _file = 'register.txt'
     with open(_file, 'a') as f:
         f.write(time.strftime("%Y%m%d,%H%M%S ") + msg + '\n')
 
+
 def clearprint():
     print(" "*80, end='\r')
+
 
 def closest_pow2(x):
     """Returns the closest power of 2 to 'x'."""
@@ -45,12 +48,14 @@ def closest_pow2(x):
     
     return 2 ** int(round(np.log2(x)))
 
+
 def next_pow2(x):
     """Returns the next closest power of 2 to 'x'."""
     if not isinstance(x, int) or (x <= 0):
         raise ValueError("'x' must be a positive natural number")
     
     return 2 ** int(np.ceil(np.log2(x)))
+
 
 def _mif(x):
     """Minimum integer factor."""
@@ -68,6 +73,7 @@ def mif(x):
     if len(res) == 1:
         res = res[0]
     return res
+
 
 def pad_centered(x, length):
     """Pads an array with zeros.
@@ -102,6 +108,7 @@ def pad_centered(x, length):
 
     return y, off
 
+
 def shrink_centered(x, length):
     """Shrinks an array at both ends.
     
@@ -127,6 +134,7 @@ def shrink_centered(x, length):
 
     return y
 
+
 def plot_dataset_to(dataset, path, dataset_pos=None, xlim=None, ylim=None, verbose=True):
     if dataset.ndim != 2:
         raise ValueError("'dataset' must be a 2d array")
@@ -150,6 +158,7 @@ def plot_dataset_to(dataset, path, dataset_pos=None, xlim=None, ylim=None, verbo
         filename = os.path.join(path, f"dataset_plot-{igl:0{int(np.log10(len(dataset)))+1}d}.png")
         fig.savefig(filename)
     plt.close(fig)
+
 
 def confused_plot(ax, cmat, labels, ilabels):
     ax.imshow(cmat, cmap=plt.get_cmap('Blues'), vmin=0, vmax=cmat.sum()*0.2)
