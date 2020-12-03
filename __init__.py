@@ -4,6 +4,7 @@
 #
 
 from . import config
+from . import dictionary_learning
 from . import glitch_learning
 from . import patches_1d
 from . import rrof_fortran
