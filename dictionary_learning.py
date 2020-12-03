@@ -8,6 +8,7 @@ import scipy.optimize
 from sklearn.decomposition import MiniBatchDictionaryLearning
 import spams
 
+from . import metrics
 from . import patches_1d
 
 
@@ -239,7 +240,7 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
                 """Function to be minimized."""
                 self.transform_alpha = transform_alpha
                 clean[0] = self.reconstruct(x1, step=step)  # normalized
-                return (1 - ssim(clean[0], x0)) / 2
+                return (1 - metrics.ssim(clean[0], x0)) / 2
         else:
             pos = slice(*wave_pos)
 
@@ -247,7 +248,7 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
                 """Function to be minimized."""
                 self.transform_alpha = transform_alpha
                 clean[0] = self.reconstruct(x1, step=step)  # normalized
-                return (1 - ssim(clean[0][pos], x0[pos])) / 2
+                return (1 - metrics.ssim(clean[0][pos], x0[pos])) / 2
 
         res = sp.optimize.minimize(
             fun2min,
@@ -579,7 +580,7 @@ class DictionarySpams:
 
         """        
         if loss_fun is None:
-            loss_fun = dssim
+            loss_fun = metrics.dssim
             norm = True
         else:
             norm = False  # Lets loss_fun manage the scaling

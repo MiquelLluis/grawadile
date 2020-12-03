@@ -5,7 +5,7 @@ import numpy as np
 from numpy import pi, exp, sqrt, log, log10, sin, ceil
 from numpy.random import uniform
 
-from .config import *  # Global variables (settings, all CAPS)
+from . import config as cfg
 
 
 # -----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ class AligoGaussianNoise:
     """
     _version = '2018.12.04.0'
 
-    def __init__(self, noise=None, t=1, sf=SF, psd=None, random_seed=None):
+    def __init__(self, noise=None, t=1, sf=cfg.SF, psd=None, random_seed=None):
         self.sf = sf
         self.random_seed = random_seed
         self._i_version = self._version  # same as current class
@@ -112,7 +112,7 @@ class AligoGaussianNoise:
 
         return '%s(t=%s, sf=%s, random_seed=%s)' % args
 
-    def add_to(self, x, snr=1, limsx=None, pos=0, sf=SF, norm=True):
+    def add_to(self, x, snr=1, limsx=None, pos=0, sf=cfg.SF, norm=True):
         """Add the simulated noise to the signal 'x'.
 
         Parameters
@@ -174,7 +174,7 @@ class AligoGaussianNoise:
         else:
             pickle.dump(data, file)
 
-    def rescale(self, x, snr=1, sf=SF):
+    def rescale(self, x, snr=1, sf=cfg.SF):
         """Rescale the signal 'x' to the given snr with respect to the PSD.
 
         Parameters
@@ -207,7 +207,7 @@ class AligoGaussianNoise:
         """Noise amplitude."""
         return sqrt(self.psd(f))
 
-    def snr(self, x, at=ST):
+    def snr(self, x, at=cfg.ST):
         """Signal to Noise Ratio.
 
         Parameters
@@ -318,13 +318,13 @@ def gen_set(sq):
 
     """
     # Maximum time length (maximum waveform length)
-    mtSG = 2 * LIM0['MQ'] / (pi * LIM0['mf0']) * sqrt(-log(TH))
-    mtG = LIM0['MT']
-    mtRD = sqrt(2) * LIM0['MQ'] / (pi * LIM0['mf0']) * (-log(TH))
+    mtSG = 2 * cfg.LIM0['MQ'] / (pi * cfg.LIM0['mf0']) * sqrt(-log(cfg.TH))
+    mtG = cfg.LIM0['MT']
+    mtRD = sqrt(2) * cfg.LIM0['MQ'] / (pi * cfg.LIM0['mf0']) * (-log(cfg.TH))
     # Maximum signal length (rounded UP)
-    mslSG = int(ceil(mtSG * SF))
-    mslG = int(ceil(mtG * SF))
-    mslRD = int(ceil(mtRD * SF))
+    mslSG = int(ceil(mtSG * cfg.SF))
+    mslG = int(ceil(mtG * cfg.SF))
+    mslRD = int(ceil(mtRD * cfg.SF))
 
     # Waveform signals
     sigSG = np.zeros((sq[0], mslSG), dtype=float)  # Sinus Gaussian
@@ -335,78 +335,44 @@ def gen_set(sq):
     sigGp = np.empty((sq[1], 4), dtype=float)
     sigRDp = np.empty((sq[2], 6), dtype=float)
     # Sample time points (s) (not centered!)
-    tp = np.arange(0, max(mtSG, mtG, mtRD), ST)
+    tp = np.arange(0, max(mtSG, mtG, mtRD), cfg.ST)
 
     # Sample generation
     # ---- Sine Gaussian ----
     for i in range(sq[0]):
         f0, q, hrss, t = gen_params_0sg()
 
-        sl = int(t*SF)  # Particular signal length
+        sl = int(t*cfg.SF)  # Particular signal length
         signal = wave_sg(tp[:sl], t/2, f0, q, hrss)
 
         # Store the signal centered and normalized
-        off = int((mtSG - t) / 2 * SF)  # Offset
+        off = int((mtSG - t) / 2 * cfg.SF)  # Offset
         sigSG[i, off:off+sl] = signal / max(abs(signal))
         sigSGp[i] = (t, f0, q, hrss, off, off+sl)
     # ---- Gaussian ----
     for i in range(sq[1]):
         hrss, t = gen_params_0g()
 
-        sl = int(t*SF)  # Particular signal length
+        sl = int(t*cfg.SF)  # Particular signal length
         signal = wave_g(tp[:sl], t/2, hrss, t)
 
         # Store the signal centered and normalized
-        off = int((mtG - t) / 2 * SF)  # Offset
+        off = int((mtG - t) / 2 * cfg.SF)  # Offset
         sigG[i, off:off+sl] = signal / max(abs(signal))
         sigGp[i] = (t, hrss, off, off+sl)
     # ---- Ring-Down ----
     for i in range(sq[2]):
         f0, q, hrss, t = gen_params_0rd()
 
-        sl = int(t*SF)  # Particular signal length
+        sl = int(t*cfg.SF)  # Particular signal length
         signal = wave_rd(tp[:sl], 0, f0, q, hrss)
 
         # Store the signal centered and normalized
-        off = int((mtRD - t) / 2 * SF)  # Offset
+        off = int((mtRD - t) / 2 * cfg.SF)  # Offset
         sigRD[i, off:off+sl] = signal / max(abs(signal))
         sigRDp[i] = (t, f0, q, hrss, off, off+sl)
 
     return (tp, (sigSG, sigG, sigRD), (sigSGp, sigGp, sigRDp))
-
-
-def classificate(parents, children):
-    """Classification algorithm.
-
-    Method used to classificate a waveform by comparing the similarity of
-    reconstructions made with different dictionaries.
-
-    PARAMETERS
-    ----------
-    parents: array_like, (waveforms, features)
-        Parent waveforms whose indices coincide to their respective morphological
-        families. Each parent waveform will have associated 'len(parents)' children.
-
-    children: array_like, (parents, waveforms, features)
-        Reconstructions associated with parent waveforms.
-
-    RETURNS
-    -------
-    index: int
-        Index of the most fitting morphological family (same index as the parent
-        waveform).
-
-    """
-    index = np.argmin([
-        np.prod([
-            dssim(p, c)
-            if not any(np.isnan(c))
-            else 1  # Worst result
-            for c in children[:, ip]
-        ])
-        for ip, p in enumerate(parents)
-    ])
-    return index
 
 
 # ------------------------------------------------------------------------------
@@ -423,8 +389,8 @@ def wave_sg(t, t0, f0, Q, hrss):
 
 
 def wave_g(t, t0, hrss, T):
-    h0 = (-8*log(TH))**(1/4) * hrss / sqrt(T)
-    env = h0 * exp(4 * log(TH) * ((t-t0) / T)**2)
+    h0 = (-8*log(cfg.TH))**(1/4) * hrss / sqrt(T)
+    env = h0 * exp(4 * log(cfg.TH) * ((t-t0) / T)**2)
 
     return env
 
@@ -444,63 +410,25 @@ def wave_rd(t, t0, f0, Q, hrss):
 #
 
 def gen_params_0sg():
-    f0 = int(10 ** uniform(log10(LIM0['mf0']), log10(LIM0['Mf0'])))  # Frequency
-    Q = 10 ** uniform(log10(LIM0['mQ']), log10(LIM0['MQ']))  # Q factor
-    hrss = 10 ** uniform(log10(LIM0['mhrss']), log10(LIM0['Mhrss']))  # hrss
-    t = 2 * Q / (pi * f0) * sqrt(-log(TH))  # TOTAL duration (not centered)
+    f0 = int(10 ** uniform(log10(cfg.LIM0['mf0']), log10(cfg.LIM0['Mf0'])))  # Frequency
+    Q = 10 ** uniform(log10(cfg.LIM0['mQ']), log10(cfg.LIM0['MQ']))  # Q factor
+    hrss = 10 ** uniform(log10(cfg.LIM0['mhrss']), log10(cfg.LIM0['Mhrss']))  # hrss
+    t = 2 * Q / (pi * f0) * sqrt(-log(cfg.TH))  # TOTAL duration (not centered)
 
     return (f0, Q, hrss, t)
 
 
 def gen_params_0g():
-    hrss = 10 ** uniform(log10(LIM0['mhrss']), log10(LIM0['Mhrss']))  # hrss
-    t = uniform(LIM0['mT'], LIM0['MT'])  # TOTAL duration
+    hrss = 10 ** uniform(log10(cfg.LIM0['mhrss']), log10(cfg.LIM0['Mhrss']))  # hrss
+    t = uniform(cfg.LIM0['mT'], cfg.LIM0['MT'])  # TOTAL duration
 
     return (hrss, t)
 
 
 def gen_params_0rd():
-    f0 = int(10 ** uniform(log10(LIM0['mf0']), log10(LIM0['Mf0'])))  # Frequency
-    Q = 10 ** uniform(log10(LIM0['mQ']), log10(LIM0['MQ']))  # Q factor
-    hrss = 10 ** uniform(log10(LIM0['mhrss']), log10(LIM0['Mhrss']))  # hrss
-    t = -sqrt(2) * Q / (pi * f0) * log(TH)  # Duration
+    f0 = int(10 ** uniform(log10(cfg.LIM0['mf0']), log10(cfg.LIM0['Mf0'])))  # Frequency
+    Q = 10 ** uniform(log10(cfg.LIM0['mQ']), log10(cfg.LIM0['MQ']))  # Q factor
+    hrss = 10 ** uniform(log10(cfg.LIM0['mhrss']), log10(cfg.LIM0['Mhrss']))  # hrss
+    t = -sqrt(2) * Q / (pi * f0) * log(cfg.TH)  # Duration
 
     return (f0, Q, hrss, t)
-
-
-# ---- Similarity test functions ----
-def mse(x, y):
-    """Mean Squared Error."""
-    return np.mean((x-y)**2)
-
-
-def ssim(x, y):
-    """Structural similarity index."""
-    mux = x.mean()
-    muy = y.mean()
-    sx2 = x.var()
-    sy2 = y.var()
-    sxy = np.cov(x, y, ddof=0)[0, 1]
-    l_ = 1
-    c1 = (0.01*l_) ** 2
-    c2 = (0.03*l_) ** 2
-
-    return ((2*mux*muy+c1) * (2*sxy+c2)
-            / ((mux**2+muy**2+c1) * (sx2+sy2+c2)))
-
-
-def dssim(x, y):
-    """Structural dissimilarity."""
-    return (1 - ssim(x, y)) / 2
-
-
-def residual(x, y):
-    """Norm of the difference between 'x' and 'y'."""
-    return np.linalg.norm(x - y)
-
-
-def softmax(x, axis=None):
-    """Softmax probability distribution."""
-    coefs = exp(x)
-    return coefs / coefs.sum(axis=axis, keepdims=True)
-
