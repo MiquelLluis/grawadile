@@ -13,21 +13,18 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-try:
-    del print
-except:
-    pass
-_print = print
-def print(*args, dest='both', sep=' ', end='\n', **kw_args):
+def printc(*args, dest='both', sep=' ', end='\n', **kw_args):
     """Print messages to the console and/or to the notebook."""
     dest = dest.lower()
-    if dest in ('print', 'both'):
-        _print(*args, sep=sep, end=end, **kw_args)
+    
     if dest in ('terminal', 'both'):
         bstring = sep.join([repr(s) for s in args]) + end
         if not isinstance(bstring, bytes):
             bstring = bstring.encode()
         os.write(1, bstring)
+    
+    if dest == 'both':
+        print(*args, sep=sep, end=end, **kw_args)
 
 
 def register(msg):
