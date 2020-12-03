@@ -7,7 +7,7 @@ from . import config
 from . import estimators
 from . import dictionary_learning
 from . import patches_1d
-from . import rrof_fortran
+from . import rrof
 from . import util
 from . import waveforms
 

@@ -28,4 +28,5 @@ except ImportError:
 	from .gs1_compile import compile_gs
 	compile_gs()
 	del compile_gs
+	
 	from .gs import gs1
