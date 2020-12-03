@@ -8,3 +8,6 @@ from . import glitch_learning
 from . import patches_1d
 from . import rrof_fortran
 from . import util
+
+
+__version__ = '2020.12.03'

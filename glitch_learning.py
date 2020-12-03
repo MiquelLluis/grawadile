@@ -15,8 +15,6 @@ import spams
 from . import patches_1d
 from .config import *  # Global variables (settings, all CAPS)
 
-__version__ = '2018.10.30'
-
 
 # -----------------------------------------------------------------------------
 #  MAIN CLASSES
