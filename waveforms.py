@@ -504,12 +504,3 @@ def softmax(x, axis=None):
     coefs = exp(x)
     return coefs / coefs.sum(axis=axis, keepdims=True)
 
-
-# ---- Auxiliar functions ----
-def bin2patch(ibin, nbin, plength, step):
-    if ibin > nbin - plength:
-        ipatch = (nbin - plength) // step + 1
-    else:
-        ipatch = ibin // step
-
-    return ipatch

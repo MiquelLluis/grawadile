@@ -170,3 +170,12 @@ def confused_plot(ax, cmat, labels, ilabels):
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")
     ax.grid(False)
+
+
+def bin2patch(ibin, nbin, plength, step):
+    if ibin > nbin - plength:
+        ipatch = (nbin - plength) // step + 1
+    else:
+        ipatch = ibin // step
+
+    return ipatch
