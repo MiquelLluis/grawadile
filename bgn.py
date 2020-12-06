@@ -6,14 +6,16 @@ import numpy as np
 from . import config as cfg
 
 
-
-class AligoGaussianNoise:
-    """Generate simulated aLIGO non-white gaussian noise.
+class NonwhiteGaussianNoise:
+    """Generate simulated non-white gaussian noise.
 
     Parameters
     ----------
-    noise : array_like, AligoGaussianNoise(), or str, optional
-        Alternative noise array already generated. If another AligoGaussianNoise
+    psd : array-like
+        Approximated Power Spectral Density of the non-white part of the noise.
+
+    noise : array-like, self-class, or str; optional
+        Alternative noise array already generated. If another self
         instance is given, it will create a copy of the instance. If 'str', it
         must be a valid file path of an instance saved with the 'save' method.
 
@@ -36,21 +38,17 @@ class AligoGaussianNoise:
         Length of the noise array in seconds.
 
     """
-    _version = '2018.12.04.0'
+    _version = '2020.12.07.0'
 
-    def __init__(self, noise=None, t=1, sf=cfg.SF, psd=None, random_seed=None):
+    def __init__(self, psd=None, noise=None, t=1, sf=cfg.SF, random_seed=None):
         self.sf = sf
         self.random_seed = random_seed
         self._i_version = self._version  # same as current class
         # PSD data to use
         if isinstance(psd, np.ndarray) and psd.ndim == 2 and psd.shape[0] == 2:
             self._psd = psd
-        elif psd is None:
-            # LALSuite's aLIGO ZERO Detuning, High Power PSD (starting from 20Hz!)
-            self._psd = np.loadtxt("data/PSDaLIGOZeroDetHighPower", unpack=True, skiprows=44)
-            self._psd[1] = self._psd[1] ** 2
         else:
-            raise ValueError("if provided, 'psd' must be a ndarray matrix (2xN)")
+            raise ValueError("'psd' not recognized")
         # Generate noise
         if noise is None:
             length = int(t * sf)
@@ -239,7 +237,7 @@ class AligoGaussianNoise:
             n += 1
         f = np.arange(0, sf/2, sf/2/n)
         # Noise components of the positive and zero frequencies in Fourier space
-        # weighted by aLIGO's PSD amplitude and the normal distribution.
+        # weighted by the PSD amplitude and the normal distribution.
         nf_coefs = np.sqrt(length * sf * self.psd(f, margins=0)) / 2
         nf_coefs = (nf_coefs * np.random.normal(size=n)
                     + 1j * (nf_coefs * np.random.normal(size=n)))
