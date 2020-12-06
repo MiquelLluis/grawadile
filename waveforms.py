@@ -1,5 +1,4 @@
 import numpy as np
-from numpy import pi, exp, sqrt, log, log10, sin, ceil
 from numpy.random import uniform
 
 from . import config as cfg
@@ -40,13 +39,13 @@ def gen_set(sq):
 
     """
     # Maximum time length (maximum waveform length)
-    mtSG = 2 * cfg.LIM0['MQ'] / (pi * cfg.LIM0['mf0']) * sqrt(-log(cfg.TH))
+    mtSG = 2 * cfg.LIM0['MQ'] / (np.pi * cfg.LIM0['mf0']) * np.sqrt(-np.log(cfg.TH))
     mtG = cfg.LIM0['MT']
-    mtRD = sqrt(2) * cfg.LIM0['MQ'] / (pi * cfg.LIM0['mf0']) * (-log(cfg.TH))
+    mtRD = np.sqrt(2) * cfg.LIM0['MQ'] / (np.pi * cfg.LIM0['mf0']) * (-np.log(cfg.TH))
     # Maximum signal length (rounded UP)
-    mslSG = int(ceil(mtSG * cfg.SF))
-    mslG = int(ceil(mtG * cfg.SF))
-    mslRD = int(ceil(mtRD * cfg.SF))
+    mslSG = int(np.ceil(mtSG * cfg.SF))
+    mslG = int(np.ceil(mtG * cfg.SF))
+    mslRD = int(np.ceil(mtRD * cfg.SF))
 
     # Waveform signals
     sigSG = np.zeros((sq[0], mslSG), dtype=float)  # Sinus Gaussian
@@ -99,26 +98,26 @@ def gen_set(sq):
 
 # ---- Wave functions (ONLY X COMPONENT) ----
 def wave_sg(t, t0, f0, Q, hrss):
-    h0 = sqrt(sqrt(2) * pi * f0 / Q) * hrss
-    env = h0 * exp(- (pi * f0 / Q * (t-t0)) ** 2)
-    arg = 2 * pi * f0 * (t-t0)
+    h0 = np.sqrt(np.sqrt(2) * np.pi * f0 / Q) * hrss
+    env = h0 * np.exp(- (np.pi * f0 / Q * (t-t0)) ** 2)
+    arg = 2 * np.pi * f0 * (t-t0)
 
-    return sin(arg) * env
+    return np.sin(arg) * env
 
 
 def wave_g(t, t0, hrss, T):
-    h0 = (-8*log(cfg.TH))**(1/4) * hrss / sqrt(T)
-    env = h0 * exp(4 * log(cfg.TH) * ((t-t0) / T)**2)
+    h0 = (-8*np.log(cfg.TH))**(1/4) * hrss / np.sqrt(T)
+    env = h0 * np.exp(4 * np.log(cfg.TH) * ((t-t0) / T)**2)
 
     return env
 
 
 def wave_rd(t, t0, f0, Q, hrss):
-    h0 = sqrt(sqrt(2) * pi * f0 / Q) * hrss
-    env = h0 * exp(- pi / sqrt(2) * f0 / Q * (t - t0))
-    arg = 2 * pi * f0 * (t - t0)
+    h0 = np.sqrt(np.sqrt(2) * np.pi * f0 / Q) * hrss
+    env = h0 * np.exp(- np.pi / np.sqrt(2) * f0 / Q * (t - t0))
+    arg = 2 * np.pi * f0 * (t - t0)
 
-    return sin(arg) * env
+    return np.sin(arg) * env
 
 
 # ---- Parameter generation ----
@@ -128,25 +127,25 @@ def wave_rd(t, t0, f0, Q, hrss):
 #
 
 def gen_params_0sg():
-    f0 = int(10 ** uniform(log10(cfg.LIM0['mf0']), log10(cfg.LIM0['Mf0'])))  # Frequency
-    Q = 10 ** uniform(log10(cfg.LIM0['mQ']), log10(cfg.LIM0['MQ']))  # Q factor
-    hrss = 10 ** uniform(log10(cfg.LIM0['mhrss']), log10(cfg.LIM0['Mhrss']))  # hrss
-    t = 2 * Q / (pi * f0) * sqrt(-log(cfg.TH))  # TOTAL duration (not centered)
+    f0 = int(10 ** uniform(np.log10(cfg.LIM0['mf0']), np.log10(cfg.LIM0['Mf0'])))  # Frequency
+    Q = 10 ** uniform(np.log10(cfg.LIM0['mQ']), np.log10(cfg.LIM0['MQ']))  # Q factor
+    hrss = 10 ** uniform(np.log10(cfg.LIM0['mhrss']), np.log10(cfg.LIM0['Mhrss']))  # hrss
+    t = 2 * Q / (np.pi * f0) * np.sqrt(-np.log(cfg.TH))  # TOTAL duration (not centered)
 
     return (f0, Q, hrss, t)
 
 
 def gen_params_0g():
-    hrss = 10 ** uniform(log10(cfg.LIM0['mhrss']), log10(cfg.LIM0['Mhrss']))  # hrss
+    hrss = 10 ** uniform(np.log10(cfg.LIM0['mhrss']), np.log10(cfg.LIM0['Mhrss']))  # hrss
     t = uniform(cfg.LIM0['mT'], cfg.LIM0['MT'])  # TOTAL duration
 
     return (hrss, t)
 
 
 def gen_params_0rd():
-    f0 = int(10 ** uniform(log10(cfg.LIM0['mf0']), log10(cfg.LIM0['Mf0'])))  # Frequency
-    Q = 10 ** uniform(log10(cfg.LIM0['mQ']), log10(cfg.LIM0['MQ']))  # Q factor
-    hrss = 10 ** uniform(log10(cfg.LIM0['mhrss']), log10(cfg.LIM0['Mhrss']))  # hrss
-    t = -sqrt(2) * Q / (pi * f0) * log(cfg.TH)  # Duration
+    f0 = int(10 ** uniform(np.log10(cfg.LIM0['mf0']), np.log10(cfg.LIM0['Mf0'])))  # Frequency
+    Q = 10 ** uniform(np.log10(cfg.LIM0['mQ']), np.log10(cfg.LIM0['MQ']))  # Q factor
+    hrss = 10 ** uniform(np.log10(cfg.LIM0['mhrss']), np.log10(cfg.LIM0['Mhrss']))  # hrss
+    t = -np.sqrt(2) * Q / (np.pi * f0) * np.log(cfg.TH)  # Duration
 
     return (f0, Q, hrss, t)
