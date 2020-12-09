@@ -3,6 +3,7 @@
 # Developed by Miquel Lluís Llorens Monteagudo <miquel.llorens@uv.es>
 #
 
+from . import bgn
 from . import config
 from . import estimators
 from . import dictionary_learning
