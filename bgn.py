@@ -11,23 +11,31 @@ class NonwhiteGaussianNoise:
 
     Parameters
     ----------
-    psd : array-like
+    duration : float, optional
+        Duration of noise to be generated, in seconds. It may change after
+        genetarting the noise, depending on its sample frequency.
+        Will be omitted if 'noise' is not None.
+
+    noise : array-like, NonwhiteGaussianNoise() or str; optional
+        Alternative noise array already generated. If another
+        instance is given, it will create a copy. If 'str', it must be a
+        valid file path of an instance saved with the 'save' method.
+        If no 'noise' is provided, or it is just a noise array, 'psd' must be
+        specified.
+
+    psd : array-like, optional
         Approximated Power Spectral Density of the non-white part of the noise.
-
-    noise : array-like, self-class, or str; optional
-        Alternative noise array already generated. If another self
-        instance is given, it will create a copy of the instance. If 'str', it
-        must be a valid file path of an instance saved with the 'save' method.
-
-    t : float, optional
-        Duration of noise to be generated. Will be omitted if a noise array is
-        provided. 1s by default.
+        If not given, it is assumed that 'noise' is a Pickle file or another
+        instance of this class containing the attributes of a previous instance,
+        including 'psd'. Otherwise, it must allways be provided.
 
     sf : int, optional
-        Sample frequency of the signal.
+        Sample frequency of the signal. Must be provided in case of
+        generating a new noise array or an already generated noise array
+        is provided.
 
     random_seed : int or 1-d array_like, optional
-        Seed for numpy.random.RandomState
+        Seed for numpy.random.RandomState.
 
     Attributes
     ----------
@@ -35,43 +43,55 @@ class NonwhiteGaussianNoise:
         Raw noise array generated at inicialization.
 
     duration : float
-        Length of the noise array in seconds.
+        Duration of the noise in seconds.
+
+    
 
     """
     _version = '2020.12.07.0'
 
-    def __init__(self, psd=None, noise=None, t=1, sf=cfg.SF, random_seed=None):
+    def __init__(self, duration=None, noise=None, psd=None, sf=None, random_seed=None):
+        # Attribute declaration
+        self._i_version = self._version  # same as current class
+        self.noise = noise
+        self.psd = psd
+        self.duration = duration
         self.sf = sf
         self.random_seed = random_seed
-        self._i_version = self._version  # same as current class
-        # PSD data to use
-        if isinstance(psd, np.ndarray) and psd.ndim == 2 and psd.shape[0] == 2:
-            self._psd = psd
-        else:
-            raise ValueError("'psd' not recognized")
-        # Generate noise
+        
+        # Case 1: Generating new noise
         if noise is None:
-            length = int(t * sf)
-            self.duration = length / sf
-            if t > 0:
-                self.noise = self._gen_noise(length)
-        # Import noise from array
+            # First check if all kwargs were given
+            if not isinstance(duration, (int, float)):
+                raise TypeError("'duration' must be an integer or float number")
+            if not isinstance(psd, (list, tuple, np.ndarray)):
+                raise TypeError("the power spectral density 'psd' must be an array-like")
+            if not isinstance(sf, int):
+                raise TypeError("the sampling frequency 'sf' must be an integer")
+
+            self._gen_noise()
+        
+        # Case 2: Importing an already generated noise array
         elif isinstance(noise, np.ndarray):
+            # First check if all kwargs were given
+            if not isinstance(psd, (list, tuple, np.ndarray)):
+                raise TypeError("the power spectral density 'psd' must be an array-like")
+            if not isinstance(sf, int):
+                raise TypeError("the sampling frequency 'sf' must be an integer")
+
             self.duration = len(noise) / sf
-            self.noise = noise
-        # Import from a previous instance
+
+        # Case 3: Importing another instance of NonwhiteGaussianNoise
         elif isinstance(noise, type(self)):
-            self._import_from_dict(copy.deepcopy(noise.__dict__))
-        # Import from a previous instance saved to a file
+            self._import_from_instance(noise)
+
+        # Case 4: Importing from an instance saved with the "save" method
         elif isinstance(noise, str):
-            with open(noise, 'rb') as f:
-                dict_ = pickle.load(f)
-            self._import_from_dict(dict_)
+            self._import_from_file(noise)
+
         else:
             _type = type(noise).__name__
-            raise TypeError(
-                "'%s' is not recognized as any kind of noise instance" % _type
-            )
+            raise TypeError(f"'{_type}' is not recognized as any kind of noise instance")
 
     def __getitem__(self, key):
         """Allows accessing the noise data by time indices (in milliseconds)."""
@@ -194,11 +214,11 @@ class NonwhiteGaussianNoise:
 
     def psd(self, f, margins=np.inf):
         """Interpolates the PSD from values in '_psd'."""
-        return np.interp(f, *self._psd, left=margins, right=margins)
+        return np.interp(f, *self.psd, left=margins, right=margins)
 
     def amplitude(self, f):
         """Noise amplitude."""
-        return np.sqrt(self.psd(f))
+        return np.sqrt(self.compute_psd(f))
 
     def snr(self, x, at=cfg.ST):
         """Signal to Noise Ratio.
@@ -221,26 +241,29 @@ class NonwhiteGaussianNoise:
         f = np.fft.fftfreq(ns, d=at)
         af = f[1]
         # Only sum over positive frequencies
-        sum_ = sum((abs(hf[k])**2 / self.psd(f[k]) for k in range(ns//2)))
+        sum_ = sum((abs(hf[k])**2 / self.compute_psd(f[k]) for k in range(ns//2)))
 
         return np.sqrt(4 * at**2 * af * sum_)
 
-    def _gen_noise(self, length):
+    def _gen_noise(self, *, duration):
         """Generate the noise array."""
-        sf = self.sf
+        length = int(duration * self.sf)
+        even = length % 2 == 0
         if self.random_seed is not None:
             np.random.seed(self.random_seed)
-        even = length % 2 == 0
+        
         # Positive frequencies + 0
         n = length // 2
         if not even:
             n += 1
-        f = np.arange(0, sf/2, sf/2/n)
+        f = np.arange(0, self.sf/2, self.sf/2/n)
+        
         # Noise components of the positive and zero frequencies in Fourier space
         # weighted by the PSD amplitude and the normal distribution.
-        nf_coefs = np.sqrt(length * sf * self.psd(f, margins=0)) / 2
+        nf_coefs = np.sqrt(length * self.sf * self.compute_psd(f, margins=0)) / 2
         nf_coefs = (nf_coefs * np.random.normal(size=n)
                     + 1j * (nf_coefs * np.random.normal(size=n)))
+        
         # Noise components are ordered as follows:
         #    nf[0]     zero frequency term
         #    nf[1:n]   positive-frequency terms
@@ -253,16 +276,27 @@ class NonwhiteGaussianNoise:
             nf[n+1:] = nf_coefs[:0:-1].conjugate()  # Condition  ñ(-f) = ñ*(f)
         else:
             nf[n:] = nf_coefs[:0:-1].conjugate()
-        # Inverse Fast Fourier Transform
-        ns = np.fft.ifft(nf).real
-
-        return ns
+        
+        # The final noise array
+        self.noise = np.fft.ifft(nf).real
+        self.duration = len(self.noise) // self.sf  # Actual final duration
 
     def _import_from_dict(self, dict_):
-        """For version control when importing from previous instances."""
+        """For VERSION RETROCOMPATIBILITY when importing from previous instances."""
         version = dict_.pop('_i_version', 'oldest')
+        
         if version == 'oldest':
             dict_.pop('n_samp')
             self.duration = dict_.pop('t')
             self.noise = dict_.pop('_noise')
+        
         self.__dict__.update(dict_)
+
+    def _import_from_instance(self, instance):
+        dict_ = copy.deepcopy(noise.__dict__)
+        self._import_from_dict(dict_)
+
+    def _import_from_file(self, file_path):
+        with open(noise, 'rb') as f:
+            dict_ = pickle.load(f)
+        self._import_from_dict(dict_)
