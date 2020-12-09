@@ -31,24 +31,25 @@ def clearprint():
 
 def closest_pow2(x):
     """Returns the closest power of 2 to 'x'."""
-    if not isinstance(x, int) or (x <= 0):
-        raise ValueError("'x' must be a positive natural number")
+    if not isinstance(x, int):
+        raise TypeError("'x' must be integer")
+    elif x <= 0:
+        raise ValueError("'x' must be a positive number")
     
     return 2 ** int(round(np.log2(x)))
 
 
 def next_pow2(x):
     """Returns the next closest power of 2 to 'x'."""
-    if not isinstance(x, int) or (x <= 0):
-        raise ValueError("'x' must be a positive natural number")
+    if not isinstance(x, int):
+        raise TypeError("'x' must be integer")
+    elif x <= 0:
+        raise ValueError("'x' must be a positive number")
     
     return 2 ** int(np.ceil(np.log2(x)))
 
 
 def _mif(x):
-    """Minimum integer factor."""
-    if isinstance(x, float) and not x.is_integer():
-        raise ValueError("'x' must be an integer >= 2")
     if x % 2 == 0:
         return 2
     for n in range(3, int(x/2)+1, 2):
@@ -58,8 +59,10 @@ _mif = np.vectorize(_mif, otypes=[int])
 def mif(x):
     """Minimum integer factor."""
     res = np.atleast_1d(_mif(x))
+
     if len(res) == 1:
         res = res[0]
+
     return res
 
 
