@@ -1,16 +1,18 @@
 import itertools
+from pathlib import Path
 
 from matplotlib import pyplot as plt
 
 
 def plot_dataset_to(dataset, path, dataset_pos=None, xlim=None, ylim=None, verbose=True):
     if dataset.ndim != 2:
-        raise ValueError("'dataset' must be a 2d array")
+        raise TypeError("'dataset' must be a 2d array")
 
+    path = Path(path)
     fig, ax = plt.subplots()
     for igl, gl in enumerate(dataset):
         if verbose:
-            print("Plotting plot %04d..." % igl, flush=True, end="\r", dest='terminal')
+            print("Plotting plot %04d..." % igl, flush=True, end="\r")
         ax.clear()
         ax.plot(gl)
         if dataset_pos is not None:
@@ -21,7 +23,8 @@ def plot_dataset_to(dataset, path, dataset_pos=None, xlim=None, ylim=None, verbo
         ax.axvline(p1, c='red', ls='--')
         if xlim: ax.set_xlim(xlim)
         if ylim: ax.set_ylim(ylim)
-        filename = os.path.join(path, f"dataset_plot-{igl:0{int(np.log10(len(dataset)))+1}d}.png")
+        n_igl = int(np.log10(len(dataset))) + 1
+        filename = path + f"dataset_plot-{igl:0{n_igl}d}.png"
         fig.savefig(filename)
     plt.close(fig)
 
