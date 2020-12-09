@@ -8,6 +8,7 @@ from . import config
 from . import estimators
 from . import dictionary_learning
 from . import patches_1d
+from . import plotters
 from . import rrof
 from . import util
 from . import waveforms
