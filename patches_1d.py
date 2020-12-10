@@ -1,34 +1,30 @@
-# patches_1D.py
-# Developed by Alejandro Torres <alejandro.torres@uv.es>
-# Modified by Miquel Llorens <miquel.llorens@uv.es>
-
 import numpy as np
 
 
 # PENDING TO REARRANGE TO ROW-MAJOR ORDER
-def slidingWindow(sequence ,winSize ,step=1):
-    """Returns a generator that will iterate through
-    the defined chunks of input sequence.  Input sequence
-    must be iterable."""
+# def slidingWindow(sequence ,winSize ,step=1):
+#     """Returns a generator that will iterate through
+#     the defined chunks of input sequence.  Input sequence
+#     must be iterable."""
 
-    # Verify the inputs
-    try:
-        it = iter(sequence)
-    except TypeError:
-        raise Exception("**ERROR** sequence must be iterable.")
-    if not ((type(winSize) == type(0)) and (type(step) == type(0))):
-        raise Exception("**ERROR** type(winSize) and type(step) must be int.")
-    if step > winSize:
-        raise Exception("**ERROR** step must not be larger than winSize.")
-    if winSize > len(sequence):
-        raise Exception("**ERROR** winSize must not be larger than sequence length.")
+#     # Verify the inputs
+#     try:
+#         it = iter(sequence)
+#     except TypeError:
+#         raise Exception("**ERROR** sequence must be iterable.")
+#     if not ((type(winSize) == type(0)) and (type(step) == type(0))):
+#         raise Exception("**ERROR** type(winSize) and type(step) must be int.")
+#     if step > winSize:
+#         raise Exception("**ERROR** step must not be larger than winSize.")
+#     if winSize > len(sequence):
+#         raise Exception("**ERROR** winSize must not be larger than sequence length.")
 
-    # Pre-compute number of chunks to emit
-    numOfChunks = ((len(sequence ) -winSize ) /step ) +1
+#     # Pre-compute number of chunks to emit
+#     numOfChunks = ((len(sequence ) -winSize ) /step ) +1
 
-    # Do the work
-    for i in range(0 , numOfChunks *step ,step):
-        yield int(i), sequence[i: i +winSize]
+#     # Do the work
+#     for i in range(0 , numOfChunks *step ,step):
+#         yield int(i), sequence[i: i +winSize]
 
 
 # MODIFIED -> To C contiguous NOTATION (M[samples][features])
@@ -105,3 +101,79 @@ def reconstruct_from_patches_1d(patches, signal_len):
         aux[i*step:i*step+m] += 1.0  # faster than np.ones(m)
     aux[i*step+m:] = 1  # remaining samples of 'aux'
     return np.nan_to_num(y/aux)
+
+
+def pad_centered(x, length):
+    """Pads an array with zeros.
+
+    Similar to numpy.pad(x, pad_width, 'constant'), but specifying the total
+    length instead. Allows asymmetric pad when len(x) is odd.
+    
+    PARAMETERS
+    ----------
+    x: array_like (1d)
+        Array to pad.
+
+    length: int
+        Length of the target array.
+
+    RETURNS
+    -------
+    y: array_1d
+        Array zero-padded.
+
+    off: int
+        Offset (position of x[0] in y).
+
+    """
+    x = np.asarray(x)
+    lx = len(x)
+    off = (length - lx) // 2
+    y = np.empty(length, dtype=x.dtype)
+    y[:off] = 0
+    y[off:off+lx] = x
+    y[off+lx:] = 0
+
+    return y, off
+
+
+def shrink_centered(x, length):
+    """Shrinks an array at both ends.
+    
+    PARAMETERS
+    ----------
+    x: array_like (1d)
+        Array to shrink.
+
+    length: int
+        Length of the target array.
+
+    RETURNS
+    -------
+    y: array_1d
+        Shrinked array.
+
+    """
+    x = np.asarray(x)
+    lx = len(x)
+    off0 = (lx - length) // 2
+    off1 = - (off0 + (lx - length) % 2)
+    y = x[off0:off1]
+
+    return y
+
+
+def bin2patch(ibin, nbin, plength, step):
+    """Find the (index of) the patch given the index of the bin.
+
+    Find the index of the patch to which corresponds a given index of a
+    bind 'ibin' of an array split into multiple patches of length 'plength'
+    separated with 'step' bins, adding up to a total of 'nbin'.
+
+    """
+    if ibin > nbin - plength:
+        ipatch = (nbin - plength) // step + 1
+    else:
+        ipatch = ibin // step
+
+    return ipatch
