@@ -24,7 +24,7 @@ def plot_dataset_to(dataset, path, dataset_pos=None, xlim=None, ylim=None, verbo
         if xlim: ax.set_xlim(xlim)
         if ylim: ax.set_ylim(ylim)
         n_igl = int(np.log10(len(dataset))) + 1
-        filename = path + f"dataset_plot-{igl:0{n_igl}d}.png"
+        filename = path / f"dataset_plot-{igl:0{n_igl}d}.png"
         fig.savefig(filename)
     plt.close(fig)
 

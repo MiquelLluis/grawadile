@@ -1,11 +1,16 @@
+from pathlib import Path
+
 from numpy import f2py
 
 
 def compile_gs():
-	with open("gs1.f") as sourcefile:
-	    sourcecode = sourcefile.read()
+	path = Path(__file__).parent
+	path_code = path / 'gs1.f'
+	path_compiled = path / 'gs'
 
-	f2py.compile(sourcecode, modulename='gs')
+	with open(path_code, 'rb') as sourcefile:
+	    sourcecode = sourcefile.read()
+	f2py.compile(sourcecode, modulename=path_compiled)
 
 
 if __name__ == '__main__':

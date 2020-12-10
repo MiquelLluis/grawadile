@@ -8,7 +8,7 @@ import scipy.optimize
 from sklearn.decomposition import MiniBatchDictionaryLearning
 import spams
 
-from . import metrics
+from . import estimators
 from . import patches_1d
 
 
