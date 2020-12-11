@@ -1,17 +1,22 @@
-from pathlib import Path
+import glob
+import pathlib
+import shutil
 
 from numpy import f2py
 
 
 def compile_gs():
-	path = Path(__file__).parent
+	path = pathlib.Path(__file__).parent
 	path_code = path / 'gs1.f'
-	path_compiled = path / 'gs'
+	module_name = 'gs'
 
-	with open(path_code, 'rb') as sourcefile:
-	    sourcecode = sourcefile.read()
-	f2py.compile(sourcecode, modulename=path_compiled)
+	with open(path_code, 'rb') as f:
+	    sourcecode = f.read()
 
+	res = f2py.compile(sourcecode, modulename=module_name)
+	if res != 0:
+		raise ImportError("compilation of 'gs1.f' failed")
 
-if __name__ == '__main__':
-	compile_gs()
+	gs_path = glob.glob("gs*.so")[0]
+	gs_final_path = path / gs_path
+	shutil.move(gs_path, gs_final_path)
