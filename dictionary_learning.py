@@ -426,6 +426,9 @@ class DictionarySpams:
         self.mode_traindl = mode_traindl
         self.mode_lasso = mode_lasso
 
+        # TODO: En comptes de deixar implícit cóm s'inicialitza el diccionari
+        # fer-ho explícit als arguments de '__init__'.
+        
         # Import an already generated dictionary from a file.
         if isinstance(dict_init, str):
             if dict_init.endswith(('.gz', '.gzip')):
