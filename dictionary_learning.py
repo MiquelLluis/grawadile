@@ -335,24 +335,24 @@ class DictionarySpams:
 
     Parameters
     ----------
-    dict_init : array-like(m, n),
-                tuple/list[array-like(m, p), array-like(p, 2)],
+    dict_init : array-like(p_size, d_size),
+                tuple/list[array-like(p_size, p), array-like(p, 2)],
                 str
         Source for the initial dictionary, where
-            m: is the signal size,
-            n: is the number of signals.
-        If 'm' and 'n' are not specified, dict_init is assumed to be the atoms
+            p_size: is the signal size,
+            d_size: is the number of signals.
+        If 'p_size' and 'd_size' are not specified, dict_init is assumed to be the atoms
         of the initial dictionary, otherwise it must contain an array-like with
         signals from where to extract the atoms and an array-like with the
         [start, end] indices of the signals in pairs.
         If str, it must be a valid file path to a saved 'DictionarySpams'
         instance.
 
-    m : int
+    p_size : int
         Atom length. Must be provided if creating a new dictionary from a set
         of signals.
 
-    n : int
+    d_size : int
         Number of atoms to be generated. Must be provided if creating a new
         dictionary from a set of signals.
 
@@ -394,9 +394,9 @@ class DictionarySpams:
 
     Attributes
     ----------
-    dict_init : array(m, n)
+    dict_init : array(p_size, d_size)
         Atoms of the initial dictionary.
-    components : array(m, n)
+    components : array(p_size, d_size)
         Atoms of the dictionary.
 
     References:
@@ -405,7 +405,7 @@ class DictionarySpams:
             last accessed October 2018.
 
     """
-    def __init__(self, dict_init, m=None, n=None, lambda1=1, batch_size=3,
+    def __init__(self, dict_init, p_size=None, d_size=None, lambda1=1, batch_size=3,
                  identifier='', l2_normed=True, n_iter=None, n_train=None,
                  patch_min=0, random_state=0, sc_lambda=1, trained=False,
                  mode_traindl=0, mode_lasso=2):
@@ -436,12 +436,12 @@ class DictionarySpams:
 
         # Generate the initial dictionary from the set of signals in
         # dict_init[0].
-        elif None not in (m, n):
+        elif None not in (p_size, d_size):
             collection, wave_pos = dict_init
             # TODO: new function to avoid having to compute the transposed.
             collection = collection.T
             self.dict_init = patches_1d.extract_patches_1d(
-                collection, m, wave_pos, n, l2_normed=l2_normed, patch_min=patch_min,
+                collection, p_size, wave_pos, d_size, l2_normed=l2_normed, patch_min=patch_min,
                 random_state=random_state
             )
             self.dict_init = self.dict_init.T  # This leaves dict_init as a Fortran array
@@ -449,9 +449,9 @@ class DictionarySpams:
         # Take dict_init as the initial dictionary.
         elif isinstance(dict_init, (list, tuple, np.ndarray)):
             dict_init = np.asarray(dict_init)
-            m, n = dict_init.shape
-            if m >= n:
-                raise ValueError("the dictionary must be overcomplete (m < n).")
+            p_size, d_size = dict_init.shape
+            if p_size >= d_size:
+                raise ValueError("the dictionary must be overcomplete (p_size < d_size).")
             if trained:
                 self.components = dict_init
                 self.trained = trained
@@ -471,7 +471,7 @@ class DictionarySpams:
 
         Calls 'spams.trainDL' to train the dictionary by solving the
         learning problem
-            min_{D in C} (1/n) sum_{i=1}^n (1/2)||x_i-Dalpha_i||_2^2  s.t. ...
+            min_{D in C} (1/d_size) sum_{i=1}^d_size (1/2)||x_i-Dalpha_i||_2^2  s.t. ...
                                                      ||alpha_i||_1 <= lambda1 .
 
         Parameters
@@ -595,7 +595,7 @@ class DictionarySpams:
         def fun2min(sc_lambda):
             """Function to be minimized."""
             self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
-            os.write(1, "{}\n".format(self.sc_lambda).encode())
+            os.write(1, "{}\d_size".format(self.sc_lambda).encode())
             clean[0] = self.reconstruct(x1, step=step, norm=norm)
             return loss_fun(x0[wave_pos], clean[0][wave_pos])
 
@@ -641,7 +641,7 @@ class DictionarySpams:
         signal_rec : array
             Reconstructed signal.
 
-        code : array(m, n)
+        code : array(p_size, d_size)
             Transformed data, encoded as a sparse combination of atoms.
 
         """
@@ -666,7 +666,7 @@ class DictionarySpams:
         patches = np.dot(self.components, code)
         # TODO: new function to avoid having to compute the transposed
         signal_rec = patches_1d.reconstruct_from_patches_1d(
-            np.ascontiguousarray(patches.T),  # (p, m) with C-contiguous order
+            np.ascontiguousarray(patches.T),  # (p, p_size) with C-contiguous order
             len(signal)
         )
 
