@@ -74,7 +74,8 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
     transform_alpha : float, 1 by default
         If algorithm=’lasso_lars’ or algorithm=’lasso_cd’, alpha is the
         penalty applied to the L1 norm.
-        See [1] for more details (where 'transform_alpha' is 'transform_alpha').
+        See [1] for more details (where 'transform_alpha' is
+        'transform_alpha').
 
     Attributes
     ----------
@@ -341,10 +342,10 @@ class DictionarySpams:
         Source for the initial dictionary, where
             p_size: is the signal size,
             d_size: is the number of signals.
-        If 'p_size' and 'd_size' are not specified, dict_init is assumed to be the atoms
-        of the initial dictionary, otherwise it must contain an array-like with
-        signals from where to extract the atoms and an array-like with the
-        [start, end] indices of the signals in pairs.
+        If 'p_size' and 'd_size' are not specified, dict_init is assumed to be
+        the atoms of the initial dictionary, otherwise it must contain an
+        array-like with signals from where to extract the atoms and an
+        array-like with the [start, end] indices of the signals in pairs.
         If str, it must be a valid file path to a saved 'DictionarySpams'
         instance.
 
@@ -405,10 +406,10 @@ class DictionarySpams:
             last accessed October 2018.
 
     """
-    def __init__(self, dict_init, p_size=None, d_size=None, lambda1=1, batch_size=3,
-                 identifier='', l2_normed=True, n_iter=None, n_train=None,
-                 patch_min=0, random_state=0, sc_lambda=1, trained=False,
-                 mode_traindl=0, mode_lasso=2):
+    def __init__(self, dict_init, p_size=None, d_size=None, lambda1=1,
+                 batch_size=3, identifier='', l2_normed=True, n_iter=None, 
+                 n_train=None, patch_min=0, random_state=0, sc_lambda=1,
+                 trained=False, mode_traindl=0, mode_lasso=2):
         # Initialize variables, some could be overwritten below.
         self.lambda1 = lambda1
         self.batch_size = batch_size
@@ -441,10 +442,10 @@ class DictionarySpams:
             # TODO: new function to avoid having to compute the transposed.
             collection = collection.T
             self.dict_init = patches_1d.extract_patches_1d(
-                collection, p_size, wave_pos, d_size, l2_normed=l2_normed, patch_min=patch_min,
-                random_state=random_state
+                collection, p_size, wave_pos, d_size, l2_normed=l2_normed,
+                patch_min=patch_min, random_state=random_state
             )
-            self.dict_init = self.dict_init.T  # This leaves dict_init as a Fortran array
+            self.dict_init = self.dict_init.T  # dict_init as a Fortran array
 
         # Take dict_init as the initial dictionary.
         elif isinstance(dict_init, (list, tuple, np.ndarray)):
@@ -471,8 +472,9 @@ class DictionarySpams:
 
         Calls 'spams.trainDL' to train the dictionary by solving the
         learning problem
-            min_{D in C} (1/d_size) sum_{i=1}^d_size (1/2)||x_i-Dalpha_i||_2^2  s.t. ...
-                                                     ||alpha_i||_1 <= lambda1 .
+            min_{D in C} (1/d_size) sum_{i=1}^d_size {
+                (1/2)||x_i-Dalpha_i||_2^2  s.t. ||alpha_i||_1 <= lambda1
+            } .
 
         Parameters
         ----------
@@ -522,7 +524,8 @@ class DictionarySpams:
 
         Finds the best reconstruction that can make the dictionary with its
         current parameters (previously configured). To do so, it looks for the
-        optimum value of sc_lambda which minimizes the loss function 'loss_fun'.
+        optimum value of sc_lambda which minimizes the loss function
+        'loss_fun'.
 
         The optimization of lambda is made in a logarithmic scale.
 
@@ -666,11 +669,12 @@ class DictionarySpams:
         patches = np.dot(self.components, code)
         # TODO: new function to avoid having to compute the transposed
         signal_rec = patches_1d.reconstruct_from_patches_1d(
-            np.ascontiguousarray(patches.T),  # (p, p_size) with C-contiguous order
+            np.ascontiguousarray(patches.T),  # (p, p_size), C-contiguous
             len(signal)
         )
 
-        if norm and signal_rec.any():  # Avoids ZeroDivisionError
+        # Avoids ZeroDivisionError
+        if norm and signal_rec.any():
             coef = 1 / abs(signal_rec).max()
             signal_rec *= coef
             code *= coef
