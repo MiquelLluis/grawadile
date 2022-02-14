@@ -340,8 +340,8 @@ class DictionarySpams:
                 tuple/list[array-like(p_size, p), array-like(p, 2)],
                 str
         Source for the initial dictionary, where
-            p_size: is the signal size,
-            d_size: is the number of signals.
+            p_size: is the patch size,
+            d_size: is the size of the dictionary.
         If 'p_size' and 'd_size' are not specified, dict_init is assumed to be
         the atoms of the initial dictionary, otherwise it must contain an
         array-like with signals from where to extract the atoms and an
@@ -357,7 +357,7 @@ class DictionarySpams:
         Number of atoms to be generated. Must be provided if creating a new
         dictionary from a set of signals.
 
-    lambda1 : float, 1 by default
+    lambda1 : float
         Regularization parameter of the learning algorithm. Formerly 'alpha'.
 
     batch_size : int, 3 by default
@@ -406,10 +406,13 @@ class DictionarySpams:
             last accessed October 2018.
 
     """
-    def __init__(self, dict_init, p_size=None, d_size=None, lambda1=1,
-                 batch_size=3, identifier='', l2_normed=True, n_iter=None, 
-                 n_train=None, patch_min=0, random_state=0, sc_lambda=1,
-                 trained=False, mode_traindl=0, mode_lasso=2):
+    def __init__(self, dict_init=None, signal_pool=None, wave_pos=None,
+                 p_size=None, d_size=None, lambda1=None, batch_size=3,
+                 identifier='', l2_normed=True, n_iter=None, n_train=None,
+                 patch_min=0, random_state=0, sc_lambda=1, trained=False,
+                 mode_traindl=0, mode_lasso=2):
+        self._check_initial_parameters(dict_init, signal_pool, p_size, d_size)
+
         # Initialize variables, some could be overwritten below.
         self.lambda1 = lambda1
         self.batch_size = batch_size
@@ -426,49 +429,50 @@ class DictionarySpams:
         self.mode_traindl = mode_traindl
         self.mode_lasso = mode_lasso
 
-        # TODO: En comptes de deixar implícit cóm s'inicialitza el diccionari
-        # fer-ho explícit als arguments de '__init__'.
-        
-        # Import an already generated dictionary from a file.
-        if isinstance(dict_init, str):
-            if dict_init.endswith(('.gz', '.gzip')):
-                openf = gzip.open
-            else:
-                openf = open
-            with openf(dict_init, 'rb') as f:
-                self.__dict__.update(pickle.load(f))
-
-        # Generate the initial dictionary from the set of signals in
-        # dict_init[0].
-        elif None not in (p_size, d_size):
-            collection, wave_pos = dict_init
-            # TODO: new function to avoid having to compute the transposed.
-            collection = collection.T
-            self.dict_init = patches_1d.extract_patches_1d(
-                collection, p_size, wave_pos, d_size, l2_normed=l2_normed,
-                patch_min=patch_min, random_state=random_state
-            )
-            self.dict_init = self.dict_init.T  # dict_init as a Fortran array
-
-        # Take dict_init as the initial dictionary.
-        elif isinstance(dict_init, (list, tuple, np.ndarray)):
-            dict_init = np.asarray(dict_init)
+        # Explicit initial dictionary (trained or not).
+        if dict_init is not None:
             p_size, d_size = dict_init.shape
-            if p_size >= d_size:
-                raise ValueError("the dictionary must be overcomplete (p_size < d_size).")
             if trained:
                 self.components = dict_init
                 self.trained = trained
             else:
                 self.dict_init = dict_init
-            pass
 
-        # Raise an exception if none of the above
+        # Get the initial atoms from a set of signals.
         else:
-            _type = type(dict_init).__name__
-            raise TypeError(
-                "'%s' is not recognized as an instance of DictionarySpams" % _type
+            self.dict_init = patches_1d.extract_patches_1d(
+                signal_pool,
+                p_size,
+                wave_pos=wave_pos,
+                n_patches=d_size,
+                l2_normed=l2_normed,
+                patch_min=patch_min,
+                random_state=random_state
             )
+
+    def _check_initial_parameters(self, dict_init, signal_pool, p_size, d_size):
+        nonlocal dict_init, signal_pool
+
+        if dict_init is not None:
+            p_size, d_size = dict_init.shape
+            if not isinstance(dict_init, np.ndarray):
+                raise TypeError(
+                    f"'{type(dict_init).__name__}' is not a valid 'dict_init'"
+                )
+            dict_init = np.asfortranarray(dict_init)
+        
+        elif signal_pool is not None:
+            if not isinstance(signal_pool, np.ndarray):
+                raise TypeError(
+                    f"'{type(dict_init).__name__}' is not a valid 'signal_pool'"
+                )
+            signal_pool = np.asfortranarray(signal_pool)
+        
+        else:
+            raise ValueError("either 'dict_init' or 'signal_pool' must be provided")
+        
+        if p_size >= d_size:
+            raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
 
     def train(self, patches, n_iter=None, **kwargs):
         """Train the dictionary with a set of patches.
