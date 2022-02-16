@@ -2,24 +2,29 @@ import numpy as np
 
 
 def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
-                       random_state=0, step=1, l2_normed=False,
+                       random_state=None, step=1, l2_normed=False,
                        patch_min=16):
+    rng = np.random.default_rng(random_state)
     l_signals, n_signals = signals.shape
     max_pps = int((l_signals - patch_size) / step + 1)  # Maximum patches per signal
-    np.random.seed(random_state)
 
+    # Compute the maximum number of patches that can be extracted and the
+    # limits from where to extract patches for each signal.
     if wave_pos is None:
+        window_limits = [(0, l_signals-patch_size)] * n_signals
         max_patches = max_pps * n_signals
     else:
+        window_limits = []
         max_patches = 0
-        for j0, j1 in wave_pos:
-            j0 += patch_min - patch_size
-            j1 -= patch_min
-            if j0 < 0:
-                j0 = 0
-            if j1 + patch_size >= l_signals:
-                j1 = l_signals - patch_size
-            max_patches += int(np.ceil((j1-j0)/step))
+        for p0, p1 in wave_pos:
+            p0 += patch_min - patch_size
+            p1 -= patch_min
+            if p0 < 0:
+                p0 = 0
+            if p1 + patch_size >= l_signals:
+                p1 = l_signals - patch_size
+            window_limits.append((p0, p1))
+            max_patches += int(np.ceil((p1-p0)/step))
 
     if n_patches is None:
         n_patches = max_patches
@@ -31,48 +36,19 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
     
     patches = np.empty((patch_size, n_patches), order='F')
 
-    # All possible patches without wave_pos
-    if n_patches == max_patches and wave_pos is None:
-        k = 0  # Raveled index of (j,i)
-        for i in range(n_signals):
-            for j in range(0, max_pps*step, step):
-                patches[:,k] = signals[j:j+patch_size,i]
-                k += 1
-    # All possible patches with wave_pos
-    elif n_patches == max_patches:
+    # All possible patches.
+    if n_patches == max_patches:
         k = 0
         for i in range(n_signals):
-            j0, j1 = wave_pos[i]
-            j0 += patch_min - patch_size
-            j1 -= patch_min
-            if j0 < 0:
-                j0 = 0
-            if j1 + patch_size >= l_signals:
-                j1 = l_signals - patch_size
-            for j in range(j0, j1, step):
-                if np.all(signals[j:j+patch_size,i] == 0):
-                    print(i, j)
-                    raise Exception
+            p0, p1 = window_limits[i]
+            for j in range(p0, p1, step):
                 patches[:,k] = signals[j:j+patch_size,i]
                 k += 1
-    # Limited number of patches without wave_pos
-    elif wave_pos is None:
-        for k in range(n_patches):
-            i = np.random.randint(0, n_signals)
-            j = np.random.randint(0, l_signals-patch_size)
-            patches[:,k] = signals[j:j+patch_size,i]
-    # Limited number of patches with wave_pos
+    # Limited number of patches randomly selected.
     else:
         for k in range(n_patches):
-            i = np.random.randint(0, n_signals)
-            j0, j1 = wave_pos[i]  # Window indices
-            j0 += patch_min - patch_size  # Extra space before the beggining of wave
-            j1 -= patch_min  # Ensure taking at least 'patch_min' points
-            if j0 < 0:
-                j0 = 0
-            if j1 + patch_size >= l_signals:
-                j1 = l_signals - patch_size
-            j = np.random.randint(j0, j1)
+            i = rng.integers(0, n_signals)
+            j = rng.integers(*window_limits[i])
             patches[:,k] = signals[j:j+patch_size,i]
 
     # Normalize each patch to its L2 norm
