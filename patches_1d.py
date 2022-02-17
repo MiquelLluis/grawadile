@@ -58,17 +58,18 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
     return patches
 
 
-# REARRANGED TO M[samples][features]
 def reconstruct_from_patches_1d(patches, signal_len):
-    n, m = patches.shape
-    step = int(round((signal_len - m) / (n - 1)))
-    y   = np.zeros(signal_len)
-    aux = np.zeros(signal_len)
-    for i in range(n):       
-        y[i*step:i*step+m]   += patches[i]
-        aux[i*step:i*step+m] += 1.0  # faster than np.ones(m)
-    aux[i*step+m:] = 1  # remaining samples of 'aux'
-    return np.nan_to_num(y/aux)
+    l_patches, n_patches = patches.shape
+    step = int(round((signal_len - l_patches) / (n_patches - 1)))
+    
+    reconstructed = np.zeros(signal_len)
+    normalizer = np.zeros(signal_len)
+    for i in range(n_patches):       
+        reconstructed[i*step:i*step+l_patches] += patches[:,i]
+        normalizer[i*step:i*step+l_patches] += 1
+    normalizer[i*step+l_patches:] = 1
+
+    return reconstructed / normalizer
 
 
 def pad_centered(x, length):
