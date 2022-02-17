@@ -14,7 +14,7 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
     # Compute the maximum number of patches that can be extracted and the
     # limits from where to extract patches for each signal.
     if wave_pos is None:
-        window_limits = [(0, l_signals-patch_size)] * n_signals
+        window_limits = [(0, l_signals-patch_size+1)] * n_signals
         max_patches = max_pps * n_signals
     else:
         window_limits = []
@@ -61,18 +61,19 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
     return patches
 
 
-def reconstruct_from_patches_1d(patches, signal_len):
+def reconstruct_from_patches_1d(patches, step, keepdims=False):
     l_patches, n_patches = patches.shape
-    step = int(round((signal_len - l_patches) / (n_patches - 1)))
+    total_len = (n_patches - 1) * step + l_patches
     
-    reconstructed = np.zeros(signal_len)
-    normalizer = np.zeros(signal_len)
-    for i in range(n_patches):       
+    reconstructed = np.zeros(total_len)
+    normalizer = np.zeros_like(reconstructed)
+    for i in range(n_patches):
         reconstructed[i*step:i*step+l_patches] += patches[:,i]
         normalizer[i*step:i*step+l_patches] += 1
     normalizer[i*step+l_patches:] = 1
+    reconstructed /= normalizer
 
-    return reconstructed / normalizer
+    return reconstructed.reshape(-1,1) if keepdims else reconstructed
 
 
 def pad_centered(x, length):
