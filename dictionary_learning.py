@@ -414,7 +414,6 @@ class DictionarySpams:
                  mode_traindl=0, mode_lasso=2):
         # Initialize variables, some could be overwritten below.
         self.dict_init = dict_init
-        self.signal_pool = signal_pool
         self.wave_pos = wave_pos
         self.p_size = p_size
         self.d_size = d_size
@@ -431,10 +430,12 @@ class DictionarySpams:
         self.mode_traindl = mode_traindl
         self.mode_lasso = mode_lasso
 
-        self._check_initial_parameters()
+        self._check_initial_parameters(signal_pool)
 
         # Explicit initial dictionary (trained or not).
-        if dict_init is not None:
+        if self.dict_init is not None:
+            self.dict_init = np.asfortranarray(self.dict_init)
+            self.p_size, self.d_size = self.dict_init.shape
             if trained:
                 self.components = dict_init
                 self.trained = trained
@@ -444,7 +445,7 @@ class DictionarySpams:
         # Get the initial atoms from a set of signals.
         else:
             self.dict_init = patches_1d.extract_patches_1d(
-                signal_pool,
+                np.asfortranarray(signal_pool),
                 p_size,
                 wave_pos=wave_pos,
                 n_patches=d_size,
@@ -453,26 +454,23 @@ class DictionarySpams:
                 random_state=random_state
             )
 
-    def _check_initial_parameters(self):
+    def _check_initial_parameters(self, signal_pool):
         # Explicit initial dictionary.
         if self.dict_init is not None:
-            self.p_size, self.d_size = dict_init.shape
             if not isinstance(self.dict_init, np.ndarray):
                 raise TypeError(
                     f"'{type(self.dict_init).__name__}' is not a valid 'dict_init'"
                 )
-            self.dict_init = np.asfortranarray(self.dict_init)
         # Signal pool from where to extract the initial dictionary.
-        elif self.signal_pool is not None:
-            if not isinstance(self.signal_pool, np.ndarray):
+        elif signal_pool is not None:
+            if not isinstance(signal_pool, np.ndarray):
                 raise TypeError(
-                    f"'{type(self.signal_pool).__name__}' is not a valid 'signal_pool'"
+                    f"'{type(signal_pool).__name__}' is not a valid 'signal_pool'"
                 )
             if None in (self.p_size, self.d_size):
                 raise TypeError(
                     f"'p_size' and 'd_size' must be explicitly provided along 'signal_pool'"
                 )
-            self.signal_pool = np.asfortranarray(self.signal_pool)
         # None of the above.
         else:
             raise ValueError("either 'dict_init' or 'signal_pool' must be provided")
