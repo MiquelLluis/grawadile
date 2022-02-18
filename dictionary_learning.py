@@ -300,7 +300,7 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
         patches = np.dot(code, self.components_)
         signal_rec = patches_1d.reconstruct_from_patches_1d(patches, len(signal))
 
-        if norm and signal_rec.any():  # Avoids ZeroDivisionError
+        if norm and signal_rec.any():
             coef = 1 / abs(signal_rec).max()
             signal_rec *= coef
             code *= coef
