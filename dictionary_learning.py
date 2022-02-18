@@ -12,6 +12,7 @@ from . import estimators
 from . import patches_1d
 
 
+# TODO: Actualitzar cridada a extract_patches_1d (canviat de nou a F-contiguous).
 class DictionarySklearn(MiniBatchDictionaryLearning):
     """Basic Mini-Batch Dictionary Learning's interface for waveforms.
 
