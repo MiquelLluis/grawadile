@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 
 
@@ -9,7 +11,14 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
 
     rng = np.random.default_rng(random_state)
     l_signals, n_signals = signals.shape
-    max_pps = int((l_signals - patch_size) / step + 1)  # Maximum patches per signal
+    max_pps = (l_signals - patch_size) / step + 1  # Maximum patches per signal
+    if not max_pps.is_integer() and wave_pos is None:
+        warnings.warn(
+            "'signals' cannot be fully divided into patches, the last"
+            f" {(max_pps-1)*step % step:.0f} bins of each signal will be left out",
+            RuntimeWarning
+        )
+    max_pps = int(max_pps)
 
     # Compute the maximum number of patches that can be extracted and the
     # limits from where to extract patches for each signal.
