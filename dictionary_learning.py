@@ -435,7 +435,6 @@ class DictionarySpams:
 
         # Explicit initial dictionary (trained or not).
         if dict_init is not None:
-            p_size, d_size = dict_init.shape
             if trained:
                 self.components = dict_init
                 self.trained = trained
