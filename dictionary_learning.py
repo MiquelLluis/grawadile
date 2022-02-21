@@ -591,17 +591,16 @@ class DictionarySpams:
             mode=self.mode_lasso
         )
         patches = self.components @ code
-        # TODO: new function to avoid having to compute the transposed
+
         signal_rec = patches_1d.reconstruct_from_patches_1d(
             np.ascontiguousarray(patches.T),  # (p, p_size), C-contiguous
             len(signal)
         )
 
-        # Avoids ZeroDivisionError
         if norm and signal_rec.any():
-            coef = 1 / abs(signal_rec).max()
-            signal_rec *= coef
-            code *= coef
+            normalizer = abs(signal_rec).max()
+            signal_rec /= normalizer
+            code /= normalizer
 
         return (signal_rec, code) if with_code else signal_rec
 
