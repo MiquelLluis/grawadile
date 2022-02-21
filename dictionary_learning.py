@@ -569,10 +569,7 @@ class DictionarySpams:
             Transformed data, encoded as a sparse combination of atoms.
 
         """
-        # A 'lambda1' here is assumed to be the lambda for the reconstruction.
-        if 'lambda1' in kwargs:
-            self.sc_lambda = kwargs.pop('lambda1')
-        elif 'sc_lambda' in kwargs:
+        if 'sc_lambda' in kwargs:
             self.sc_lambda = kwargs.pop('sc_lambda')
         signal = np.asarray(signal)
         # TODO: new function to avoid having to 'compute' the transposed
