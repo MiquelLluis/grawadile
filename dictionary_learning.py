@@ -510,15 +510,17 @@ class DictionarySpams:
         """
         if len(patches) != self.p_size:
             raise ValueError("the length of 'patches' must be the same as the"
-                             " atoms of the dictionary.")
+                             " atoms of the dictionary")
         if n_iter is not None:
             self.n_iter = n_iter
         elif self.n_iter is None:
-            raise ValueError("'n_iter' not specified.")
+            raise ValueError("'n_iter' not specified")
             
-
         if 'lambda1' in kwargs:
             self.lambda1 = kwargs.pop('lambda1')
+        elif self.lambda1 is None:
+            raise ValueError("'lambda1' not specified")
+
         self.n_train = patches.shape[1]
 
         self.components = spams.trainDL(
