@@ -571,8 +571,12 @@ class DictionarySpams:
         """
         if not isinstance(signal, np.ndarray):
             raise TypeError("'signal' must be a numpy array")
+        
         if signal.ndim == 1:
             signal = signal.reshape(-1, 1)  # to column vector
+            keepdims = False  # Reconstruction as a 1d-array
+        else:
+            keepdims = True  # Reconstruction as a 2d-array
 
         if sc_lambda is not None:
             self.sc_lambda = sc_lambda
@@ -592,7 +596,7 @@ class DictionarySpams:
         )
         patches = self.components @ code
 
-        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step)
+        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step, keepdims=keepdims)
 
         if norm and signal_rec.any():
             normalizer = abs(signal_rec).max()
