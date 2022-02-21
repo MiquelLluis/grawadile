@@ -590,7 +590,7 @@ class DictionarySpams:
             lambda1=self.sc_lambda,
             mode=self.mode_lasso
         ).todense()
-        patches = np.dot(self.components, code)
+        patches = self.components @ code
         # TODO: new function to avoid having to compute the transposed
         signal_rec = patches_1d.reconstruct_from_patches_1d(
             np.ascontiguousarray(patches.T),  # (p, p_size), C-contiguous
