@@ -534,6 +534,74 @@ class DictionarySpams:
         )
         self.trained = True
 
+    def reconstruct(self, signal, step=1, norm=True, with_code=False, **kwargs):
+        """Reconstruct a signal as a sparse combination of dictionary atoms.
+
+        Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
+        default it solves:
+            min_{alpha} 0.5||x-Dalpha||_2^2 + lambda1||alpha||_1
+                                        + 0.5 lambda2||alpha||_2^2
+
+        Parameters
+        ----------
+        signal : array-like
+            Sample to be reconstructed.
+
+        step : int, optional
+            Sample interval between each patch extracted from signal.
+            Determines the number of patches to be extracted. 1 by default.
+
+        norm : boolean, optional
+            Normalize the result to its maximum amplitude after adding the
+            noise. True by default.
+
+        with_code : boolean, optional.
+            If True, also returns the coefficients array. False by default.
+
+        Additional parameters will be passed to the SPAMS function 'lasso'.
+
+        Returns
+        -------
+        signal_rec : array
+            Reconstructed signal.
+
+        code : array(p_size, d_size)
+            Transformed data, encoded as a sparse combination of atoms.
+
+        """
+        # A 'lambda1' here is assumed to be the lambda for the reconstruction.
+        if 'lambda1' in kwargs:
+            self.sc_lambda = kwargs.pop('lambda1')
+        elif 'sc_lambda' in kwargs:
+            self.sc_lambda = kwargs.pop('sc_lambda')
+        signal = np.asarray(signal)
+        # TODO: new function to avoid having to 'compute' the transposed
+        patches = patches_1d.extract_patches_1d(
+            signal,
+            patch_size=len(self.components),
+            step=step
+        ).T
+        code = spams.lasso(
+            patches,
+            D=self.components,
+            lambda1=self.sc_lambda,
+            mode=self.mode_lasso
+        ).todense()
+        patches = np.dot(self.components, code)
+        # TODO: new function to avoid having to compute the transposed
+        signal_rec = patches_1d.reconstruct_from_patches_1d(
+            np.ascontiguousarray(patches.T),  # (p, p_size), C-contiguous
+            len(signal)
+        )
+
+        # Avoids ZeroDivisionError
+        if norm and signal_rec.any():
+            coef = 1 / abs(signal_rec).max()
+            signal_rec *= coef
+            code *= coef
+
+        return (signal_rec, code) if with_code else signal_rec
+
     def optimum_reconstruct(self, x0, x1, sc_lambda0, loss_fun=None,
                             tol=1e-3, step=1, method='SLSQP', full_out=False,
                             wave_pos=None, **kwargs_minimize):
@@ -629,71 +697,3 @@ class DictionarySpams:
         clean = clean[0]
 
         return (clean, res) if full_out else clean
-
-    def reconstruct(self, signal, step=1, norm=True, with_code=False, **kwargs):
-        """Reconstruct a signal as a sparse combination of dictionary atoms.
-
-        Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
-        default it solves:
-            min_{alpha} 0.5||x-Dalpha||_2^2 + lambda1||alpha||_1
-                                        + 0.5 lambda2||alpha||_2^2
-
-        Parameters
-        ----------
-        signal : array-like
-            Sample to be reconstructed.
-
-        step : int, optional
-            Sample interval between each patch extracted from signal.
-            Determines the number of patches to be extracted. 1 by default.
-
-        norm : boolean, optional
-            Normalize the result to its maximum amplitude after adding the
-            noise. True by default.
-
-        with_code : boolean, optional.
-            If True, also returns the coefficients array. False by default.
-
-        Additional parameters will be passed to the SPAMS function 'lasso'.
-
-        Returns
-        -------
-        signal_rec : array
-            Reconstructed signal.
-
-        code : array(p_size, d_size)
-            Transformed data, encoded as a sparse combination of atoms.
-
-        """
-        # A 'lambda1' here is assumed to be the lambda for the reconstruction.
-        if 'lambda1' in kwargs:
-            self.sc_lambda = kwargs.pop('lambda1')
-        elif 'sc_lambda' in kwargs:
-            self.sc_lambda = kwargs.pop('sc_lambda')
-        signal = np.asarray(signal)
-        # TODO: new function to avoid having to 'compute' the transposed
-        patches = patches_1d.extract_patches_1d(
-            signal,
-            patch_size=len(self.components),
-            step=step
-        ).T
-        code = spams.lasso(
-            patches,
-            D=self.components,
-            lambda1=self.sc_lambda,
-            mode=self.mode_lasso
-        ).todense()
-        patches = np.dot(self.components, code)
-        # TODO: new function to avoid having to compute the transposed
-        signal_rec = patches_1d.reconstruct_from_patches_1d(
-            np.ascontiguousarray(patches.T),  # (p, p_size), C-contiguous
-            len(signal)
-        )
-
-        # Avoids ZeroDivisionError
-        if norm and signal_rec.any():
-            coef = 1 / abs(signal_rec).max()
-            signal_rec *= coef
-            code *= coef
-
-        return (signal_rec, code) if with_code else signal_rec
