@@ -447,7 +447,7 @@ class DictionarySpams:
         # Get the initial atoms from a set of signals.
         else:
             self.dict_init = patches_1d.extract_patches_1d(
-                np.asfortranarray(signal_pool),
+                signal_pool,
                 p_size,
                 wave_pos=wave_pos,
                 n_patches=d_size,
@@ -471,6 +471,8 @@ class DictionarySpams:
                 raise TypeError(
                     f"'{type(signal_pool).__name__}' is not a valid 'signal_pool'"
                 )
+            if not signal_pool.flags.f_contiguous:
+                raise ValueError("'signal_pool' must be a F-contiguous array")
             if None in (self.p_size, self.d_size):
                 raise TypeError(
                     f"'p_size' and 'd_size' must be explicitly provided along 'signal_pool'"
