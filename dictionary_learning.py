@@ -438,22 +438,19 @@ class DictionarySpams:
         # Explicit initial dictionary (trained or not).
         if self.dict_init is not None:
             self.p_size, self.d_size = self.dict_init.shape
-            if trained:
-                self.components = dict_init
-                self.trained = trained
-            else:
-                self.dict_init = dict_init
+            if self.trained:
+                self.components = dict_init  # Not deep copied for now, be careful though!
 
         # Get the initial atoms from a set of signals.
         else:
             self.dict_init = patches_1d.extract_patches_1d(
-                signal_pool,
-                p_size,
-                wave_pos=wave_pos,
-                n_patches=d_size,
-                l2_normed=l2_normed,
-                patch_min=patch_min,
-                random_state=random_state
+                self.signal_pool,
+                self.p_size,
+                wave_pos=self.wave_pos,
+                n_patches=self.d_size,
+                l2_normed=self.l2_normed,
+                patch_min=self.patch_min,
+                random_state=self.random_state
             )
 
     def _check_initial_parameters(self, signal_pool):
