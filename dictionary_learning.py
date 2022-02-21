@@ -437,7 +437,6 @@ class DictionarySpams:
 
         # Explicit initial dictionary (trained or not).
         if self.dict_init is not None:
-            self.dict_init = np.asfortranarray(self.dict_init)
             self.p_size, self.d_size = self.dict_init.shape
             if trained:
                 self.components = dict_init
@@ -464,6 +463,8 @@ class DictionarySpams:
                 raise TypeError(
                     f"'{type(self.dict_init).__name__}' is not a valid 'dict_init'"
                 )
+            if not self.dict_init.flags.f_contiguous:
+                raise ValueError("'dict_init' must be a F-contiguous array")
         # Signal pool from where to extract the initial dictionary.
         elif signal_pool is not None:
             if not isinstance(signal_pool, np.ndarray):
