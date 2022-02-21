@@ -589,7 +589,7 @@ class DictionarySpams:
             D=self.components,
             lambda1=self.sc_lambda,
             mode=self.mode_lasso
-        ).todense()
+        )
         patches = self.components @ code
         # TODO: new function to avoid having to compute the transposed
         signal_rec = patches_1d.reconstruct_from_patches_1d(
