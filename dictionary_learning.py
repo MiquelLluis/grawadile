@@ -605,7 +605,7 @@ class DictionarySpams:
 
         return (signal_rec, code) if with_code else signal_rec
 
-    def optimum_reconstruct(self, x0, x1, sc_lambda0, loss_fun=None,
+    def optimum_reconstruct(self, x0, x1, sc_lambda0, loss_fun=None, norm=True,
                             tol=1e-3, step=1, method='SLSQP', full_out=False,
                             wave_pos=None, verbose=False, **kwargs_minimize):
         """Optimum reconstruction according to a loss function.
@@ -672,9 +672,6 @@ class DictionarySpams:
         """        
         if loss_fun is None:
             loss_fun = estimators.dssim
-            norm = True
-        else:
-            norm = False  # Lets loss_fun manage the scaling
 
         if wave_pos is not None:
             wave_pos = slice(*wave_pos)
@@ -689,7 +686,7 @@ class DictionarySpams:
                 # Print to terminal.
                 os.write(1, f"{self.sc_lambda}\n".encode())
             clean = self.reconstruct(x1, step=step, norm=norm)
-            return loss_fun(x0[wave_pos], clean[0][wave_pos])
+            return loss_fun(x0[wave_pos], clean[wave_pos])
 
         res = sp.optimize.minimize(
             fun2min,
