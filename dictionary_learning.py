@@ -508,14 +508,15 @@ class DictionarySpams:
         Additional parameters will be passed to the SPAMS training function.
 
         """
-        if len(patches) != len(self.dict_init):
+        if len(patches) != self.p_size:
             raise ValueError("the length of 'patches' must be the same as the"
                              " atoms of the dictionary.")
-        if n_iter is None and self.n_iter is None:
-            raise TypeError("'n_iter' not specified.")
-
         if n_iter is not None:
             self.n_iter = n_iter
+        elif self.n_iter is None:
+            raise ValueError("'n_iter' not specified.")
+            
+
         if 'lambda1' in kwargs:
             self.lambda1 = kwargs.pop('lambda1')
         self.n_train = patches.shape[1]
