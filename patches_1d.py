@@ -82,7 +82,7 @@ def reconstruct_from_patches_1d(patches, step, keepdims=False):
     normalizer[i*step+l_patches:] = 1
     reconstructed /= normalizer
 
-    return reconstructed.reshape(-1,1) if keepdims else reconstructed
+    return reconstructed if not keepdims else reconstructed.reshape(-1,1)
 
 
 def pad_centered(x, length):
