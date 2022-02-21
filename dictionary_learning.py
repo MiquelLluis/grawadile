@@ -413,7 +413,7 @@ class DictionarySpams:
     def __init__(self, dict_init=None, signal_pool=None, wave_pos=None,
                  p_size=None, d_size=None, lambda1=None, batch_size=3,
                  identifier='', l2_normed=True, n_iter=None, n_train=None,
-                 patch_min=0, random_state=0, sc_lambda=1, trained=False,
+                 patch_min=0, random_state=0, sc_lambda=None, trained=False,
                  mode_traindl=0, mode_lasso=2):
         # Initialize variables, some could be overwritten below.
         self.dict_init = dict_init
@@ -514,12 +514,12 @@ class DictionarySpams:
         if n_iter is not None:
             self.n_iter = n_iter
         elif self.n_iter is None:
-            raise ValueError("'n_iter' not specified")
+            raise TypeError("'n_iter' not specified")
             
         if 'lambda1' in kwargs:
             self.lambda1 = kwargs.pop('lambda1')
         elif self.lambda1 is None:
-            raise ValueError("'lambda1' not specified")
+            raise TypeError("'lambda1' not specified")
 
         self.n_train = patches.shape[1]
 
@@ -534,7 +534,7 @@ class DictionarySpams:
         )
         self.trained = True
 
-    def reconstruct(self, signal, step=1, norm=True, with_code=False, **kwargs):
+    def reconstruct(self, signal, sc_lambda=None, step=1, norm=True, with_code=False):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
         Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
@@ -569,15 +569,21 @@ class DictionarySpams:
             Transformed data, encoded as a sparse combination of atoms.
 
         """
-        if 'sc_lambda' in kwargs:
-            self.sc_lambda = kwargs.pop('sc_lambda')
-        signal = np.asarray(signal)
-        # TODO: new function to avoid having to 'compute' the transposed
+        if not isinstance(signal, np.ndarray):
+            raise TypeError("'signal' must be a numpy array")
+        if signal.ndim == 1:
+            signal = signal.reshape(-1, 1)  # to column vector
+
+        if sc_lambda is not None:
+            self.sc_lambda = sc_lambda
+        elif self.sc_lambda is None:
+            raise TypeError("'sc_lambda' not specified")
+        
         patches = patches_1d.extract_patches_1d(
             signal,
-            patch_size=len(self.components),
+            patch_size=self.p_size,
             step=step
-        ).T
+        )
         code = spams.lasso(
             patches,
             D=self.components,
