@@ -603,7 +603,7 @@ class DictionarySpams:
 
     def optimum_reconstruct(self, x0, x1, sc_lambda0, loss_fun=None,
                             tol=1e-3, step=1, method='SLSQP', full_out=False,
-                            wave_pos=None, **kwargs_minimize):
+                            wave_pos=None, verbose=False, **kwargs_minimize):
         """Optimum reconstruction according to a loss function.
 
         Finds the best reconstruction that can make the dictionary with its
@@ -681,7 +681,9 @@ class DictionarySpams:
             """Function to be minimized."""
             nonlocal clean
             self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
-            os.write(1, "{}\d_size".format(self.sc_lambda).encode())
+            if verbose:
+                # Print to terminal.
+                os.write(1, f"{self.sc_lambda}\n".encode())
             clean = self.reconstruct(x1, step=step, norm=norm)
             return loss_fun(x0[wave_pos], clean[0][wave_pos])
 
