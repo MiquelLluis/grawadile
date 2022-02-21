@@ -607,7 +607,7 @@ class DictionarySpams:
 
     def optimum_reconstruct(self, x0, x1, sc_lambda0, loss_fun=None, norm=True,
                             tol=1e-3, step=1, method='SLSQP', full_out=False,
-                            wave_pos=None, verbose=False, **kwargs_minimize):
+                            wave_pos=..., verbose=False, **kwargs_minimize):
         """Optimum reconstruction according to a loss function.
 
         Finds the best reconstruction that can make the dictionary with its
@@ -673,7 +673,7 @@ class DictionarySpams:
         if loss_fun is None:
             loss_fun = estimators.dssim
 
-        if wave_pos is not None:
+        if wave_pos is not Ellipsis:
             wave_pos = slice(*wave_pos)
 
         # Minimize in logarithmic scale for performance reasons.

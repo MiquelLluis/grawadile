@@ -139,6 +139,7 @@ dmypy.json
 
 data/
 tests/
+TODO.txt
 *.ipynb
 *.bar
 *.err
