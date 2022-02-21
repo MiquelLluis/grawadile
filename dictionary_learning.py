@@ -672,18 +672,17 @@ class DictionarySpams:
         else:
             norm = False  # Lets loss_fun manage the scaling
 
-        clean = [None]  # 'trick' for recovering the optimum reconstruction
-
         if wave_pos is not None:
             wave_pos = slice(*wave_pos)
 
-        # The minimization is performed in logarithmic scale for performance
-        # reasons.
+        # Minimize in logarithmic scale for performance reasons.
+        clean = None  # To recover the optimum reconstruction
         def fun2min(sc_lambda):
             """Function to be minimized."""
+            nonlocal clean
             self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
             os.write(1, "{}\d_size".format(self.sc_lambda).encode())
-            clean[0] = self.reconstruct(x1, step=step, norm=norm)
+            clean = self.reconstruct(x1, step=step, norm=norm)
             return loss_fun(x0[wave_pos], clean[0][wave_pos])
 
         res = sp.optimize.minimize(
@@ -693,6 +692,5 @@ class DictionarySpams:
             tol=tol,
             **kwargs_minimize
         )
-        clean = clean[0]
 
         return (clean, res) if full_out else clean
