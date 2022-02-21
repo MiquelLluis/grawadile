@@ -592,7 +592,7 @@ class DictionarySpams:
         )
         patches = self.components @ code
 
-        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, len(signal))
+        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step)
 
         if norm and signal_rec.any():
             normalizer = abs(signal_rec).max()
