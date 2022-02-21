@@ -291,6 +291,9 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
             Transformed data, encoded as a sparse combination of atoms.
 
         """
+        if signal.ndim != 2:
+            raise ValueError("'signal' must be a 2d-array (column)")
+
         patches = patches_1d.extract_patches_1d(
             signal,
             patch_size=self.l_components,
