@@ -212,8 +212,8 @@ class NonwhiteGaussianNoise:
 
         return (x_new, factor)
 
-    def psd(self, f, margins=np.inf):
-        """Interpolates the PSD from values in '_psd'."""
+    def compute_psd(self, f, margins=np.inf):
+        """Interpolates the PSD."""
         return np.interp(f, *self.psd, left=margins, right=margins)
 
     def amplitude(self, f):
@@ -245,9 +245,9 @@ class NonwhiteGaussianNoise:
 
         return np.sqrt(4 * at**2 * af * sum_)
 
-    def _gen_noise(self, *, duration):
+    def _gen_noise(self):
         """Generate the noise array."""
-        length = int(duration * self.sf)
+        length = int(self.duration * self.sf)
         even = length % 2 == 0
         if self.random_seed is not None:
             np.random.seed(self.random_seed)
