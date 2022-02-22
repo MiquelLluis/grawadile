@@ -249,8 +249,7 @@ class NonwhiteGaussianNoise:
         """Generate the noise array."""
         length = int(self.duration * self.sf)
         even = length % 2 == 0
-        if self.random_seed is not None:
-            np.random.seed(self.random_seed)
+        np.random.seed(self.random_seed)
         
         # Positive frequencies + 0
         n = length // 2
