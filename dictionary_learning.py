@@ -444,7 +444,7 @@ class DictionarySpams:
         # Get the initial atoms from a set of signals.
         else:
             self.dict_init = patches_1d.extract_patches_1d(
-                self.signal_pool,
+                signal_pool,
                 self.p_size,
                 wave_pos=self.wave_pos,
                 n_patches=self.d_size,
@@ -481,7 +481,7 @@ class DictionarySpams:
         if self.p_size >= self.d_size:
             raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
 
-    def train(self, patches, n_iter=None, **kwargs):
+    def train(self, patches, lambda1=None, n_iter=None, **kwargs):
         """Train the dictionary with a set of patches.
 
         Calls 'spams.trainDL' to train the dictionary by solving the
@@ -516,8 +516,8 @@ class DictionarySpams:
         elif self.n_iter is None:
             raise TypeError("'n_iter' not specified")
             
-        if 'lambda1' in kwargs:
-            self.lambda1 = kwargs.pop('lambda1')
+        if lambda1 is not None:
+            self.lambda1 = lambda1
         elif self.lambda1 is None:
             raise TypeError("'lambda1' not specified")
 
