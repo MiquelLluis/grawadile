@@ -413,7 +413,7 @@ class DictionarySpams:
     def __init__(self, dict_init=None, signal_pool=None, wave_pos=None,
                  p_size=None, d_size=None, lambda1=None, batch_size=3,
                  identifier='', l2_normed=True, n_iter=None, n_train=None,
-                 patch_min=0, random_state=0, sc_lambda=None, trained=False,
+                 patch_min=1, random_state=0, sc_lambda=None, trained=False,
                  mode_traindl=0, mode_lasso=2):
         # Initialize variables, some could be overwritten below.
         self.dict_init = dict_init

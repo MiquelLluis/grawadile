@@ -5,7 +5,7 @@ import numpy as np
 
 def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
                        random_state=None, step=1, l2_normed=False,
-                       patch_min=16):
+                       patch_min=1):
     if signals.ndim != 2:
         raise ValueError("'signals' must be a 2d-array")
 
