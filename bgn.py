@@ -278,7 +278,7 @@ class NonwhiteGaussianNoise:
         
         # The final noise array
         self.noise = np.fft.ifft(nf).real
-        self.duration = len(self.noise) // self.sf  # Actual final duration
+        self.duration = len(self.noise) / self.sf  # Actual final duration
 
     def _import_from_dict(self, dict_):
         """For VERSION RETROCOMPATIBILITY when importing from previous instances."""
