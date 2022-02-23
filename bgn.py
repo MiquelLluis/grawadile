@@ -48,18 +48,14 @@ class NonwhiteGaussianNoise:
     
 
     """
-    _version = '2020.12.07.0'
-
     def __init__(self, duration=None, noise=None, psd=None, sf=None, random_seed=None):
-        # Attribute declaration
-        self._i_version = self._version  # same as current class
         self.duration = duration
         self.noise = noise
         self.psd = psd
         self.sf = sf
         self.random_seed = random_seed
         
-        # Case 1: Generating new noise
+        # Generate new noise.
         if duration is not None:
             # First check if all kwargs were given
             if not isinstance(duration, (int, float)):
@@ -71,7 +67,7 @@ class NonwhiteGaussianNoise:
 
             self._gen_noise()
         
-        # Case 2: Importing an already generated noise array
+        # Import a noise array.
         elif isinstance(noise, np.ndarray):
             # First check if all kwargs were given
             if not isinstance(psd, (list, tuple, np.ndarray)):
@@ -80,14 +76,6 @@ class NonwhiteGaussianNoise:
                 raise TypeError("the sampling frequency 'sf' must be an integer")
 
             self.duration = len(noise) / sf
-
-        # Case 3: Importing another instance of NonwhiteGaussianNoise
-        elif isinstance(noise, type(self)):
-            self._import_from_instance(noise)
-
-        # Case 4: Importing from an instance saved with the "save" method
-        elif isinstance(noise, str):
-            self._import_from_file(noise)
 
         else:
             _type = type(noise).__name__
@@ -279,23 +267,3 @@ class NonwhiteGaussianNoise:
         # The final noise array
         self.noise = np.fft.ifft(nf).real
         self.duration = len(self.noise) / self.sf  # Actual final duration
-
-    def _import_from_dict(self, dict_):
-        """For VERSION RETROCOMPATIBILITY when importing from previous instances."""
-        version = dict_.pop('_i_version', 'oldest')
-        
-        if version == 'oldest':
-            dict_.pop('n_samp')
-            self.duration = dict_.pop('t')
-            self.noise = dict_.pop('_noise')
-        
-        self.__dict__.update(dict_)
-
-    def _import_from_instance(self, instance):
-        dict_ = copy.deepcopy(noise.__dict__)
-        self._import_from_dict(dict_)
-
-    def _import_from_file(self, file_path):
-        with open(noise, 'rb') as f:
-            dict_ = pickle.load(f)
-        self._import_from_dict(dict_)
