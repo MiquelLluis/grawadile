@@ -89,7 +89,7 @@ class NonwhiteGaussianNoise:
         snr : int or float, optional
             Signal to Noise Ratio. Defaults to 1.
 
-        limsx : array-like or None, optional
+        limsx : tuple, optional
             Limits of 'x' where to calculate the SNR.
 
         pos : int, optional
@@ -112,15 +112,15 @@ class NonwhiteGaussianNoise:
             Coefficient used to rescale the signal.
 
         """
-        n = x.shape[-1]
+        n = len(x)
         if n > len(self.noise):
             raise ValueError("'x' is larger than the noise array")
 
         if limsx is None:
-            limsx = (None, None)
-        limsx = slice(*limsx)
+            scale = snr / self.snr(x, at=1/sf)
+        else:
+            scale = snr / self.snr(x[slice(*limsx)], at=1/sf)
 
-        scale = snr / self.snr(x[limsx], at=1/sf)
         x_noisy = x * scale + self.noise[pos:pos+n]
 
         if norm:
