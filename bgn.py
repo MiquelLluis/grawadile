@@ -78,34 +78,16 @@ class NonwhiteGaussianNoise:
             self.duration = len(noise) / sf
 
         else:
-            _type = type(noise).__name__
-            raise TypeError(f"'{_type}' is not recognized as any kind of noise instance")
+            raise TypeError(
+                f"'{type(noise).__name__}' is not recognized as any kind of noise instance"
+            )
 
     def __getitem__(self, key):
-        """Allows accessing the noise data by time indices (in milliseconds)."""
-        if isinstance(key, int):
-            return self.noise[int(key / 1000 * self.sf)]
-        elif not isinstance(key, slice):
-            return TypeError("list indices must be integers or slices")
-
-        if key.start:
-            start = int(key.start / 1000 * self.sf)
-        else:
-            start = None
-        if key.stop:
-            stop = int(key.stop / 1000 * self.sf)
-        else:
-            stop = None
-        if key.step:
-            step = int(key.step / 1000 * self.sf)
-        else:
-            step = None
-        sl = slice(start, stop, step)
-
-        return self.noise[sl]
+        """Direct slice access to noise array."""
+        return self.noise[key]
 
     def __len__(self):
-        """Length of the noise data in milliseconds."""
+        """Length of the noise array."""
         return self.noise.shape[-1]
 
     def __repr__(self):
