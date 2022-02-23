@@ -67,13 +67,15 @@ def classificate(parents, children):
         waveform).
 
     """
-    index = np.argmin([
-        np.prod([
-            dssim(p, c)
-            if not any(np.isnan(c))
-            else 1  # Worst result
-            for c in children[:, ip]
-        ])
-        for ip, p in enumerate(parents)
-    ])
+    prods = []
+    for ip, p in enumerate(parents):
+        losses = []
+        for c in children[:,ip]:
+            if not np.isnan(np.sum(c)):
+                losses.append(dssim(p, c))
+            else:
+                losses.append(1.0)  # Worst result
+        prods.append(np.prod(losses))
+    index = np.argmin(prods)
+    
     return index
