@@ -49,38 +49,20 @@ class NonwhiteGaussianNoise:
 
     """
     def __init__(self, duration=None, noise=None, psd=None, sf=None, random_seed=None):
-        self.duration = duration
+        self.duration = duration  # May be corrected after calling _gen_noise()
         self.noise = noise
         self.psd = psd
         self.sf = sf
         self.random_seed = random_seed
+
+        self._check_initial_parameters()
         
         # Generate new noise.
         if duration is not None:
-            # First check if all kwargs were given
-            if not isinstance(duration, (int, float)):
-                raise TypeError("'duration' must be an integer or float number")
-            if not isinstance(psd, (list, tuple, np.ndarray)):
-                raise TypeError("the power spectral density 'psd' must be an array-like")
-            if not isinstance(sf, int):
-                raise TypeError("the sampling frequency 'sf' must be an integer")
-
             self._gen_noise()
-        
-        # Import a noise array.
-        elif isinstance(noise, np.ndarray):
-            # First check if all kwargs were given
-            if not isinstance(psd, (list, tuple, np.ndarray)):
-                raise TypeError("the power spectral density 'psd' must be an array-like")
-            if not isinstance(sf, int):
-                raise TypeError("the sampling frequency 'sf' must be an integer")
-
-            self.duration = len(noise) / sf
-
+        # Imported an already generated array.
         else:
-            raise TypeError(
-                f"'{type(noise).__name__}' is not recognized as any kind of noise instance"
-            )
+            self.duration = len(noise) / sf
 
     def __getitem__(self, key):
         """Direct slice access to noise array."""
@@ -205,6 +187,22 @@ class NonwhiteGaussianNoise:
         sum_ = sum((abs(hf[k])**2 / self.compute_psd(f[k]) for k in range(ns//2)))
 
         return np.sqrt(4 * at**2 * af * sum_)
+
+    def _check_initial_parameters(self):
+        # Check optional arguments.
+        if self.duration is not None:
+            if not isinstance(self.duration, (int, float)):
+                raise TypeError("'duration' must be an integer or float number")
+        elif self.noise is None:
+            raise TypeError("either 'duration' or 'noise' must be provided!")
+        elif not isinstance(self.noise, (list, tuple, np.ndarray)):
+            raise TypeError("'noise' must be an array-like iterable")
+
+        # Check required arguments.
+        if self.psd is None:
+            raise TypeError("'psd' must be provided")
+        if self.sf is None:
+            raise TypeError("'sf' must be provided")
 
     def _gen_noise(self):
         """Generate the noise array."""
