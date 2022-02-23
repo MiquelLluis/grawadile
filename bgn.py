@@ -53,14 +53,14 @@ class NonwhiteGaussianNoise:
     def __init__(self, duration=None, noise=None, psd=None, sf=None, random_seed=None):
         # Attribute declaration
         self._i_version = self._version  # same as current class
+        self.duration = duration
         self.noise = noise
         self.psd = psd
-        self.duration = duration
         self.sf = sf
         self.random_seed = random_seed
         
         # Case 1: Generating new noise
-        if noise is None:
+        if duration is not None:
             # First check if all kwargs were given
             if not isinstance(duration, (int, float)):
                 raise TypeError("'duration' must be an integer or float number")
