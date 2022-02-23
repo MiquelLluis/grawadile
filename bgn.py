@@ -148,15 +148,6 @@ class NonwhiteGaussianNoise:
 
         return (x_noisy, scale)
 
-    def save(self, file):
-        """Save the current state to a file."""
-        data = self.__dict__
-        if isinstance(file, str):
-            with open(file, 'wb') as f:
-                pickle.dump(data, f)
-        else:
-            pickle.dump(data, file)
-
     def rescale(self, x, snr=1, sf=cfg.SF):
         """Rescale the signal 'x' to the given snr with respect to the PSD.
 
