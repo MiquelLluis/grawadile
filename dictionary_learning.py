@@ -454,34 +454,6 @@ class DictionarySpams:
                 random_state=self.random_state
             )
 
-    def _check_initial_parameters(self, signal_pool):
-        # Explicit initial dictionary.
-        if self.dict_init is not None:
-            if not isinstance(self.dict_init, np.ndarray):
-                raise TypeError(
-                    f"'{type(self.dict_init).__name__}' is not a valid 'dict_init'"
-                )
-            if not self.dict_init.flags.f_contiguous:
-                raise ValueError("'dict_init' must be a F-contiguous array")
-        # Signal pool from where to extract the initial dictionary.
-        elif signal_pool is not None:
-            if not isinstance(signal_pool, np.ndarray):
-                raise TypeError(
-                    f"'{type(signal_pool).__name__}' is not a valid 'signal_pool'"
-                )
-            if not signal_pool.flags.f_contiguous:
-                raise ValueError("'signal_pool' must be a F-contiguous array")
-            if None in (self.p_size, self.d_size):
-                raise TypeError(
-                    f"'p_size' and 'd_size' must be explicitly provided along 'signal_pool'"
-                )
-        # None of the above.
-        else:
-            raise ValueError("either 'dict_init' or 'signal_pool' must be provided")
-        
-        if self.p_size >= self.d_size:
-            raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
-
     def train(self, patches, lambda1=None, n_iter=None, **kwargs):
         """Train the dictionary with a set of patches.
 
@@ -698,3 +670,33 @@ class DictionarySpams:
         )
 
         return (clean, res) if full_out else clean
+
+    def _check_initial_parameters(self, signal_pool):
+        # Explicit initial dictionary.
+        if self.dict_init is not None:
+            if not isinstance(self.dict_init, np.ndarray):
+                raise TypeError(
+                    f"'{type(self.dict_init).__name__}' is not a valid 'dict_init'"
+                )
+            if not self.dict_init.flags.f_contiguous:
+                raise ValueError("'dict_init' must be a F-contiguous array")
+        
+        # Signal pool from where to extract the initial dictionary.
+        elif signal_pool is not None:
+            if not isinstance(signal_pool, np.ndarray):
+                raise TypeError(
+                    f"'{type(signal_pool).__name__}' is not a valid 'signal_pool'"
+                )
+            if not signal_pool.flags.f_contiguous:
+                raise ValueError("'signal_pool' must be a F-contiguous array")
+            if None in (self.p_size, self.d_size):
+                raise TypeError(
+                    f"'p_size' and 'd_size' must be explicitly provided along 'signal_pool'"
+                )
+        
+        # None of the above.
+        else:
+            raise ValueError("either 'dict_init' or 'signal_pool' must be provided")
+        
+        if self.p_size >= self.d_size:
+            raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
