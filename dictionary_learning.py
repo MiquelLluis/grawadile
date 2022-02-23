@@ -147,18 +147,19 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
             )
 
         else:
-            _type = type(dict_init).__name__
             raise TypeError(
-                "'%s' is not recognized as any kind of dictoinary" % _type
+                f"'{type(dict_init).__name__}' is not recognized as any kind of dictoinary"
             )
 
     def __str__(self):
         """Most identificative data of the dictionary."""
-        n_train = 'untrained' if self.n_train is None else '%06d' % self.n_train
-        return 'dico_%s_%.04f_%04d_%03d_%03d_%03d_%s_%05d' % (
-            self.identifier, self.alpha, self.n_components, self.l_components,
-            self.patch_min, self.batch_size, n_train, self.n_iter
+        n_train = "untrained" if self.n_train is None else f"{self.n_train:06d}"
+        str_ = (
+            f"dico_{self.identifier}_{self.alpha:.04f}_{self.n_components:04d}"
+            f"_{self.l_components:03d}_{self.patch_min:03d}_{self.batch_size:03d}"
+            f"_{n_train}_{self.n_iter:05d}"
         )
+        return str_
 
     def fit(self, patches):
         """Train the dictionary with a set of patches.

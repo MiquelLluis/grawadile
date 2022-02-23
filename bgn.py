@@ -93,7 +93,7 @@ class NonwhiteGaussianNoise:
     def __repr__(self):
         args = (type(self).__name__, self.duration, self.sf, self.random_seed)
 
-        return '%s(t=%s, sf=%s, random_seed=%s)' % args
+        return "{}(t={}, sf={}, random_seed={})".format(*args)
 
     def add_to(self, x, snr=1, limsx=None, pos=0, sf=cfg.SF, norm=True):
         """Add the simulated noise to the signal 'x'.
