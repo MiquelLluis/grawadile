@@ -88,7 +88,7 @@ class NonwhiteGaussianNoise:
 
     def __len__(self):
         """Length of the noise array."""
-        return self.noise.shape[-1]
+        return len(self.noise)
 
     def __repr__(self):
         args = (type(self).__name__, self.duration, self.sf, self.random_seed)
