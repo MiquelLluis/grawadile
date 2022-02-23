@@ -14,25 +14,15 @@ class NonwhiteGaussianNoise:
     duration : float, optional
         Duration of noise to be generated, in seconds. It may change after
         genetarting the noise, depending on its sample frequency.
-        Will be omitted if 'noise' is not None.
 
-    noise : array-like, NonwhiteGaussianNoise() or str; optional
-        Alternative noise array already generated. If another
-        instance is given, it will create a copy. If 'str', it must be a
-        valid file path of an instance saved with the 'save' method.
-        If no 'noise' is provided, or it is just a noise array, 'psd' must be
-        specified.
+    noise : array-like, optional
+        Alternative noise array already generated.
 
-    psd : array-like, optional
-        Approximated Power Spectral Density of the non-white part of the noise.
-        If not given, it is assumed that 'noise' is a Pickle file or another
-        instance of this class containing the attributes of a previous instance,
-        including 'psd'. Otherwise, it must allways be provided.
+    psd : 2d array-like, (time_samples, psd_samples)
+        Power Spectral Density of the non-white part of the noise.
 
-    sf : int, optional
-        Sample frequency of the signal. Must be provided in case of
-        generating a new noise array or an already generated noise array
-        is provided.
+    sf : int
+        Sample frequency of the signal.
 
     random_seed : int or 1-d array_like, optional
         Seed for numpy.random.RandomState.
@@ -40,17 +30,14 @@ class NonwhiteGaussianNoise:
     Attributes
     ----------
     noise : array
-        Raw noise array generated at inicialization.
 
     duration : float
         Duration of the noise in seconds.
 
-    
-
     """
     def __init__(self, duration=None, noise=None, psd=None, sf=None, random_seed=None):
         self.duration = duration  # May be corrected after calling _gen_noise()
-        self.noise = noise
+        self.noise = np.asarray(noise) if duration is None else None
         self.psd = psd
         self.sf = sf
         self.random_seed = random_seed
@@ -77,7 +64,7 @@ class NonwhiteGaussianNoise:
 
         return "{}(t={}, sf={}, random_seed={})".format(*args)
 
-    def add_to(self, x, snr=1, limsx=None, pos=0, sf=cfg.SF, norm=True):
+    def add_to(self, x, snr=1, snr_lim=None, pos=0, sf=cfg.SF, norm=True):
         """Add the simulated noise to the signal 'x'.
 
         Parameters
@@ -89,8 +76,8 @@ class NonwhiteGaussianNoise:
         snr : int or float, optional
             Signal to Noise Ratio. Defaults to 1.
 
-        limsx : tuple, optional
-            Limits of 'x' where to calculate the SNR.
+        snr_lim : tuple, optional
+            Limits in 'x' where to calculate the SNR.
 
         pos : int, optional
             Index position in the noise array where to inject the signal.
@@ -116,10 +103,10 @@ class NonwhiteGaussianNoise:
         if n > len(self.noise):
             raise ValueError("'x' is larger than the noise array")
 
-        if limsx is None:
+        if snr_lim is None:
             scale = snr / self.snr(x, at=1/sf)
         else:
-            scale = snr / self.snr(x[slice(*limsx)], at=1/sf)
+            scale = snr / self.snr(x[slice(*snr_lim)], at=1/sf)
 
         x_noisy = x * scale + self.noise[pos:pos+n]
 
@@ -131,7 +118,7 @@ class NonwhiteGaussianNoise:
         return (x_noisy, scale)
 
     def rescale(self, x, snr=1, sf=cfg.SF):
-        """Rescale the signal 'x' to the given snr with respect to the PSD.
+        """Rescale the signal 'x' to the given snr w.r.t. the PSD.
 
         Parameters
         ----------
