@@ -11,7 +11,7 @@ def mse(x, y):
 
 
 def ssim(x, y):
-    """Structural similarity index."""
+    """Structural similarity index."""  # TODO: Doc més
     mux = x.mean()
     muy = y.mean()
     sx2 = x.var()

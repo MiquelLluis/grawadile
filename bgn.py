@@ -7,7 +7,7 @@ from . import config as cfg
 
 
 class NonwhiteGaussianNoise:
-    """Generate simulated non-white gaussian noise.
+    """Simulate non-white gaussian noise.
 
     Parameters
     ----------
