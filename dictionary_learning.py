@@ -384,9 +384,10 @@ class DictionarySpams:
         Number of patches used to train the dictionary in case it has been
         trained already (just informative).
 
-    patch_min : int, optional
+    patch_min : int, 1 by default
         Minimum number of samples within each 'wave_pos[i]' to include in each
         extracted atom when 'signal_pool' given.
+        Will be ignored if 'wave_pos' is None.
 
     random_state : int, optional
         Seed used for random sampling.
@@ -432,7 +433,7 @@ class DictionarySpams:
     def __init__(self, dict_init=None, signal_pool=None, wave_pos=None,
                  p_size=None, d_size=None, lambda1=None, batch_size=64,
                  identifier='', l2_normed=True, n_iter=None, n_train=None,
-                 patch_min=None, random_state=None, sc_lambda=None, trained=False,
+                 patch_min=1, random_state=None, sc_lambda=None, trained=False,
                  mode_traindl=0, mode_lasso=2):
         self.dict_init = dict_init
         self.wave_pos = wave_pos
