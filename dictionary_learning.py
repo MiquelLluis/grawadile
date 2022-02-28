@@ -436,6 +436,7 @@ class DictionarySpams:
                  patch_min=1, random_state=None, sc_lambda=None, trained=False,
                  mode_traindl=0, mode_lasso=2):
         self.dict_init = dict_init
+        self.components = dict_init
         self.wave_pos = wave_pos
         self.p_size = p_size
         self.d_size = d_size
@@ -458,8 +459,6 @@ class DictionarySpams:
         # Explicit initial dictionary (trained or not).
         if self.dict_init is not None:
             self.p_size, self.d_size = self.dict_init.shape
-            if self.trained:
-                self.components = dict_init  # Not deep copied for now, be careful though!
 
         # Get the initial atoms from a set of signals.
         else:
@@ -472,6 +471,7 @@ class DictionarySpams:
                 patch_min=self.patch_min,
                 random_state=self.random_state
             )
+            self.components = self.dict_init
 
     def train(self, patches, lambda1=None, n_iter=None, verbose=False, **kwargs):
         """Train the dictionary with a set of patches.
@@ -524,11 +524,11 @@ class DictionarySpams:
         tic = time.time()
         self.components, model = spams.trainDL(
             patches,
-            D=self.dict_init,
+            D=self.dict_init,  # Cool-start
             batchsize=self.batch_size,
             lambda1=self.lambda1,
             iter=self.n_iter,
-            mode=self.mode_traindl,  # default mode is 2
+            mode=self.mode_traindl,  # Default mode is 2
             verbose=verbose,
             return_model=True,
             **kwargs
