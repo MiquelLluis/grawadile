@@ -566,8 +566,7 @@ class DictionarySpams:
             Determines the number of patches to be extracted. 1 by default.
 
         norm : boolean, True by default
-            If True normalize the result to its maximum amplitude after adding
-            the noise.
+            Normalize the result so that its maximum amplitude is 1.
 
         with_code : boolean, False by default.
             If True, also returns the coefficients array.
