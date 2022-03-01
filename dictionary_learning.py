@@ -543,7 +543,7 @@ class DictionarySpams:
         else:
             self.t_train = tac - tic
 
-    def reconstruct(self, signal, sc_lambda=None, step=1, norm=True, with_code=False):
+    def reconstruct(self, signal, sc_lambda=None, step=1, l2_normed=True, with_code=False):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
         Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
@@ -564,8 +564,8 @@ class DictionarySpams:
             Sample interval between each patch extracted from signal.
             Determines the number of patches to be extracted. 1 by default.
 
-        norm : boolean, True by default
-            Normalize the result so that its maximum amplitude is 1.
+        l2_normed : boolean, True by default
+            Normalize the result so that the euclidian norm is 1.
 
         with_code : boolean, False by default.
             If True, also returns the coefficients array.
@@ -609,14 +609,14 @@ class DictionarySpams:
 
         signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step, keepdims=keepdims)
 
-        if norm and signal_rec.any():
-            normalizer = abs(signal_rec).max()
-            signal_rec /= normalizer
-            code /= normalizer
+        if l2_normed and signal_rec.any():
+            norm = np.linalg.norm(signal_rec)
+            signal_rec /= norm
+            code /= norm
 
         return (signal_rec, code) if with_code else signal_rec
 
-    def optimum_reconstruct(self, noisy, ref, sc_lambda0, loss_fun=None, norm=True,
+    def optimum_reconstruct(self, noisy, ref, sc_lambda0, loss_fun=None, l2_normed=True,
                             tol=1e-3, step=1, method='SLSQP', full_out=False,
                             wave_pos=None, verbose=False, **kwargs_minimize):
         """Optimum reconstruction according to a loss function.
@@ -645,8 +645,8 @@ class DictionarySpams:
             a float value, which is the target to be minimized.
             If None, 'grawadile.estimators.dssim' will be used.
 
-        norm : bool, True by default
-            Whether to normalize the reconstructions.
+        l2_normed : bool, True by default
+            Normalize the reconstructions so that their euclidian norm is 1.
 
         tol : float, 1e-3 by default
             Tolerance parameter of SciPy's 'minimize' function.
@@ -700,7 +700,7 @@ class DictionarySpams:
                 self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
                 if verbose:
                     os.write(1, f"{self.sc_lambda}\n".encode())  # In case of using jupyterlab
-                rec = self.reconstruct(noisy, step=step, norm=norm)
+                rec = self.reconstruct(noisy, step=step, l2_normed=l2_normed)
                 return loss_fun(rec, ref)
         else:
             wave_pos = slice(*wave_pos)
@@ -711,7 +711,7 @@ class DictionarySpams:
                 self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
                 if verbose:
                     os.write(1, f"{self.sc_lambda}\n".encode())  # In case of using jupyterlab
-                rec = self.reconstruct(noisy, step=step, norm=norm)
+                rec = self.reconstruct(noisy, step=step, l2_normed=l2_normed)
                 return loss_fun(rec[wave_pos], ref[wave_pos])
 
         res = sp.optimize.minimize(

@@ -64,7 +64,7 @@ class NonwhiteGaussianNoise:
 
         return "{}(t={}, sf={}, random_seed={})".format(*args)
 
-    def add_to(self, x, snr=1, snr_lim=None, pos=0, sf=cfg.SF, norm=True):
+    def add_to(self, x, snr=1, snr_lim=None, pos=0, sf=cfg.SF, l2_normed=True):
         """Add the simulated noise to the signal 'x'.
 
         Parameters
@@ -86,8 +86,8 @@ class NonwhiteGaussianNoise:
         sf : int, optional
             Sample frequency of the signal.
 
-        norm : boolean, optional
-            Normalize 'x' to its maximum value after adding the noise.
+        l2_normed : boolean, optional
+            Normalize 'x' after adding the noise.
             True by default.
 
         Returns
@@ -110,10 +110,10 @@ class NonwhiteGaussianNoise:
 
         x_noisy = x * scale + self.noise[pos:pos+n]
 
-        if norm:
-            x_max = abs(x_noisy).max()
-            x_noisy /= x_max
-            scale /= x_max
+        if l2_normed:
+            norm = np.linalg.norm(x_noisy)
+            x_noisy /= norm
+            scale /= norm
 
         return (x_noisy, scale)
 
