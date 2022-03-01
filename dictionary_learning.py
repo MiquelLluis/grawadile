@@ -736,6 +736,8 @@ class DictionarySpams:
                 )
             if not self.dict_init.flags.f_contiguous:
                 raise ValueError("'dict_init' must be a F-contiguous array")
+            if self.dict_init.shape[0] >= self.dict_init.shape[1]:
+                raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
         
         # Signal pool from where to extract the initial dictionary.
         elif signal_pool is not None:
@@ -749,10 +751,9 @@ class DictionarySpams:
                 raise TypeError(
                     f"'p_size' and 'd_size' must be explicitly provided along 'signal_pool'"
                 )
+            if self.p_size >= self.d_size:
+                raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
         
         # None of the above.
         else:
             raise ValueError("either 'dict_init' or 'signal_pool' must be provided")
-        
-        if self.p_size >= self.d_size:
-            raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
