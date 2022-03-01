@@ -555,7 +555,6 @@ class DictionarySpams:
         ----------
         signal : ndarray
             Sample to be reconstructed.
-            If 1d-array, will be reshaped to 2d-array (column vector).
 
         sc_lambda : float, optional
             Regularization parameter of the sparse coding transformation.
