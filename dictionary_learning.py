@@ -437,7 +437,7 @@ class DictionarySpams:
                  p_size=None, d_size=None, lambda1=None, batch_size=64,
                  identifier='', l2_normed=True, n_iter=None, n_train=None,
                  patch_min=1, random_state=None, sc_lambda=None, trained=False,
-                 mode_traindl=0, mode_lasso=2):
+                 ignore_completeness=False, mode_traindl=0, mode_lasso=2):
         self.dict_init = dict_init
         self.components = dict_init
         self.wave_pos = wave_pos
@@ -454,6 +454,7 @@ class DictionarySpams:
         self.random_state = random_state
         self.sc_lambda = sc_lambda
         self.trained = trained
+        self.ignore_completeness = ignore_completeness
         self.mode_traindl = mode_traindl
         self.mode_lasso = mode_lasso
 
@@ -738,7 +739,8 @@ class DictionarySpams:
                 )
             if not self.dict_init.flags.f_contiguous:
                 raise ValueError("'dict_init' must be a F-contiguous array")
-            if self.dict_init.shape[0] >= self.dict_init.shape[1]:
+            if (self.dict_init.shape[0] >= self.dict_init.shape[1]
+                and not self.ignore_completeness):
                 raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
         
         # Signal pool from where to extract the initial dictionary.
