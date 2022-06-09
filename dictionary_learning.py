@@ -601,7 +601,8 @@ class DictionarySpams:
         patches = patches_1d.extract_patches_1d(
             signal,
             patch_size=self.p_size,
-            step=step
+            step=step,
+            l2_normed=True,
         )
         code = spams.lasso(
             patches,
