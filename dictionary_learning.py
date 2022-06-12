@@ -11,7 +11,9 @@ from . import estimators
 from . import patches_1d
 
 
-os.environ['KMP_WARNINGS'] = 'FALSE'  # Remove temporal warning from OpenMP
+# Remove warning from OpenMP, present in older versions of python-spams.
+if spams.__version__ < '2.6.5.4':
+    os.environ['KMP_WARNINGS'] = 'FALSE'
 
 
 # TODO: Actualitzar cridada a extract_patches_1d (canviat de nou a F-contiguous).
