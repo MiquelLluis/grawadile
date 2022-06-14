@@ -1,6 +1,5 @@
-import gzip
 import os
-import pickle
+import time
 
 import numpy as np
 import scipy as sp
@@ -12,6 +11,12 @@ from . import estimators
 from . import patches_1d
 
 
+# Remove warning from OpenMP, present in older versions of python-spams.
+if not '__version__' in dir(spams) or spams.__version__ < '2.6.5.4':
+    os.environ['KMP_WARNINGS'] = 'FALSE'
+
+
+# TODO: Actualitzar cridada a extract_patches_1d (canviat de nou a F-contiguous).
 class DictionarySklearn(MiniBatchDictionaryLearning):
     """Basic Mini-Batch Dictionary Learning's interface for waveforms.
 
@@ -74,7 +79,8 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
     transform_alpha : float, 1 by default
         If algorithm=’lasso_lars’ or algorithm=’lasso_cd’, alpha is the
         penalty applied to the L1 norm.
-        See [1] for more details (where 'transform_alpha' is 'transform_alpha').
+        See [1] for more details (where 'transform_alpha' is
+        'transform_alpha').
 
     Attributes
     ----------
@@ -145,18 +151,18 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
             )
 
         else:
-            _type = type(dict_init).__name__
             raise TypeError(
-                "'%s' is not recognized as any kind of dictoinary" % _type
+                f"'{type(dict_init).__name__}' is not recognized as any kind of dictoinary"
             )
 
     def __str__(self):
-        """Most identificative data of the dictionary."""
-        n_train = 'untrained' if self.n_train is None else '%06d' % self.n_train
-        return 'dico_%s_%.04f_%04d_%03d_%03d_%03d_%s_%05d' % (
-            self.identifier, self.alpha, self.n_components, self.l_components,
-            self.patch_min, self.batch_size, n_train, self.n_iter
+        n_train = "untrained" if self.n_train is None else f"{self.n_train:06d}"
+        str_ = (
+            f"dico_{self.identifier}_{self.alpha:.04f}_{self.n_components:04d}"
+            f"_{self.l_components:03d}_{self.patch_min:03d}_{self.batch_size:03d}"
+            f"_{n_train}_{self.n_iter:05d}"
         )
+        return str_
 
     def fit(self, patches):
         """Train the dictionary with a set of patches.
@@ -221,7 +227,7 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
 
         RETURNS
         -------
-        clean : ndarray
+        rec : ndarray
             Optimum reconstruction of the signal.
 
         res : OptimizedResult, only returned if `full_out == True`.
@@ -233,22 +239,22 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
         """
         # TODO: IF USED, THIS FUNCTION NEEDS TO BE UPDATED. SEE THE EQUIVALENT
         # FUNCTION FROM THE CLASS DictionarySpams.
-        clean = [None]  # 'trick' for recovering the optimum reconstruction
+        rec = [None]  # 'trick' for recovering the optimum reconstruction
 
         if wave_pos is None:
             def fun2min(transform_alpha):
                 """Function to be minimized."""
                 self.transform_alpha = transform_alpha
-                clean[0] = self.reconstruct(x1, step=step)  # normalized
-                return (1 - metrics.ssim(clean[0], x0)) / 2
+                rec[0] = self.reconstruct(x1, step=step)  # normalized
+                return (1 - estimators.ssim(rec[0], x0)) / 2
         else:
             pos = slice(*wave_pos)
 
             def fun2min(transform_alpha):
                 """Function to be minimized."""
                 self.transform_alpha = transform_alpha
-                clean[0] = self.reconstruct(x1, step=step)  # normalized
-                return (1 - metrics.ssim(clean[0][pos], x0[pos])) / 2
+                rec[0] = self.reconstruct(x1, step=step)  # normalized
+                return (1 - estimators.ssim(rec[0][pos], x0[pos])) / 2
 
         res = sp.optimize.minimize(
             fun2min,
@@ -257,9 +263,9 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
             tol=tol,
             **kwargs_minimize
         )
-        clean = clean[0]
+        rec = rec[0]
 
-        return (clean, res) if full_out else clean
+        return (rec, res) if full_out else rec
 
     def reconstruct(self, signal, step=1, norm=True, with_code=False):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
@@ -289,6 +295,9 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
             Transformed data, encoded as a sparse combination of atoms.
 
         """
+        if signal.ndim != 2:
+            raise ValueError("'signal' must be a 2d-array (column)")
+
         patches = patches_1d.extract_patches_1d(
             signal,
             patch_size=self.l_components,
@@ -298,7 +307,7 @@ class DictionarySklearn(MiniBatchDictionaryLearning):
         patches = np.dot(code, self.components_)
         signal_rec = patches_1d.reconstruct_from_patches_1d(patches, len(signal))
 
-        if norm and signal_rec.any():  # Avoids ZeroDivisionError
+        if norm and signal_rec.any():
             coef = 1 / abs(signal_rec).max()
             signal_rec *= coef
             code *= coef
@@ -335,35 +344,36 @@ class DictionarySpams:
 
     Parameters
     ----------
-    dict_init : array-like(m, n),
-                tuple/list[array-like(m, p), array-like(p, 2)],
-                str
-        Source for the initial dictionary, where
-            m: is the signal size,
-            n: is the number of signals.
-        If 'm' and 'n' are not specified, dict_init is assumed to be the atoms
-        of the initial dictionary, otherwise it must contain an array-like with
-        signals from where to extract the atoms and an array-like with the
-        [start, end] indices of the signals in pairs.
-        If str, it must be a valid file path to a saved 'DictionarySpams'
-        instance.
+    dict_init : 2d-array(p_size, d_size), optional
+        Atoms of the initial dictionary.
+        If None, 'signal_pool' must be given.
 
-    m : int
-        Atom length. Must be provided if creating a new dictionary from a set
-        of signals.
+    signal_pool : 2d-array(samples, signals), optional
+        Set of signals from where to randomly extract the atoms.
+        Ignored if 'dict_init' is not None.
 
-    n : int
-        Number of atoms to be generated. Must be provided if creating a new
-        dictionary from a set of signals.
+    wave_pos : 2d array-like (len(signals), 2), optional
+        Position of each waveform inside 'signal_pool' from where to extract
+        the atoms for the initial dictionary.
+        If None, the whole array will be used.
 
-    lambda1 : float, 1 by default
-        Regularization parameter of the learning algorithm. Formerly 'alpha'.
+    p_size : int, optional
+        Atom length (patch size).
+        If 'signal_pool' is not None, must be given.
 
-    batch_size : int, 3 by default
+    d_size : int, optional
+        Number of atoms (dictionary size).
+        If 'signal_pool' is not None, must be given.
+
+    lambda1 : float, optional
+        Regularization parameter of the learning algorithm.
+        If None, will be requierd when calling 'train' method.
+
+    batch_size : int, 64 by default
         Number of samples in each mini-batch.
 
     identifier : str, optional
-        A word or short note to identify the dictionary.
+        A word or note to identify the dictionary.
 
     l2_normed : bool, True by default
         If True, normalize atoms to their L2-Norm.
@@ -371,113 +381,121 @@ class DictionarySpams:
     n_iter : int, optional
         Total number of iterations to perform.
         If a negative number is provided it will perform the computation during
-        the corresponding number of seconds.
-        If dict_init is not trained, this parameter can be given to the 'train'
-        method instead.
+        the corresponding number of seconds. For instance n_iter=-5 learns the
+        dictionary during 5 seconds.
+        If None, will be required when calling 'train' method.
 
     n_train : int, optional
-        Number of patches (components) used to train the dictionary if
-        'dict_init' is already trained (merely informative).
+        Number of patches used to train the dictionary in case it has been
+        trained already (just informative).
 
-    patch_min : int, 0 by default
-        Minimum number of non-zero samples to include in each atom.
+    patch_min : int, 1 by default
+        Minimum number of samples within each 'wave_pos[i]' to include in each
+        extracted atom when 'signal_pool' given.
+        Will be ignored if 'wave_pos' is None.
 
-    random_state : int, 0 by default
+    random_state : int, optional
         Seed used for random sampling.
 
-    sc_lambda : float, 1 by default
-        Regularization parameter of the sparse coding. Formerly
-        'transform_alhpa'.
+    sc_lambda : float, optional
+        Regularization parameter of the sparse coding transformation.
 
     trained : bool, False by default
         Flag indicating whether dict_init is an already trained dictionary.
 
+    mode_traindl : int, 0 by default
+        Refer to [1] for more information.
+
+    mode_lasso : int, 2 by default
+        Refer to [1] for more information.
+
     Attributes
     ----------
-    dict_init : array(m, n)
+    dict_init : array(p_size, d_size)
         Atoms of the initial dictionary.
-    components : array(m, n)
-        Atoms of the dictionary.
 
-    References:
+    components : array(p_size, d_size)
+        Atoms of the current dictionary.
 
-        [1]: SPAMS (for python), (http://spams-devel.gforge.inria.fr/),
-            last accessed October 2018.
+    n_iter : int
+        Number of iterations performed in training.
+
+    t_train : float
+        Time spent training.
+
+    identifier : str
+        A word or note to identify the dictionary.
+
+    References
+    ----------
+    [1]: SPAMS (for python), (http://spams-devel.gforge.inria.fr/), last
+    accessed in october 2018.
+
+    [2]: SciPy's Optimization tools, (https://docs.scipy.org/doc/scipy/reference/optimize.html),
+    last accessed in February 2022.
 
     """
-    def __init__(self, dict_init, m=None, n=None, lambda1=1, batch_size=3,
+    def __init__(self, dict_init=None, signal_pool=None, wave_pos=None,
+                 p_size=None, d_size=None, lambda1=None, batch_size=64,
                  identifier='', l2_normed=True, n_iter=None, n_train=None,
-                 patch_min=0, random_state=0, sc_lambda=1, trained=False,
-                 mode_traindl=0, mode_lasso=2):
-        # Initialize variables, some could be overwritten below.
+                 patch_min=1, random_state=None, sc_lambda=None, trained=False,
+                 ignore_completeness=False, mode_traindl=0, mode_lasso=2):
+        self.dict_init = dict_init
+        self.components = dict_init
+        self.wave_pos = wave_pos
+        self.p_size = p_size
+        self.d_size = d_size
         self.lambda1 = lambda1
         self.batch_size = batch_size
         self.identifier = identifier
         self.l2_normed = l2_normed
-        if n_iter is not None:
-            self.n_iter = n_iter
-        if n_train is not None:
-            self.n_train = n_train
+        self.n_iter = n_iter
+        self.t_train = -n_iter if n_iter is not None and n_iter < 0 else None
+        self.n_train = n_train
         self.patch_min = patch_min
         self.random_state = random_state
         self.sc_lambda = sc_lambda
         self.trained = trained
+        self.ignore_completeness = ignore_completeness
         self.mode_traindl = mode_traindl
         self.mode_lasso = mode_lasso
 
-        # Import an already generated dictionary from a file.
-        if isinstance(dict_init, str):
-            if dict_init.endswith(('.gz', '.gzip')):
-                openf = gzip.open
-            else:
-                openf = open
-            with openf(dict_init, 'rb') as f:
-                self.__dict__.update(pickle.load(f))
+        self._check_initial_parameters(signal_pool)
 
-        # Generate the initial dictionary from the set of signals in
-        # dict_init[0].
-        elif None not in (m, n):
-            collection, wave_pos = dict_init
-            # TODO: new function to avoid having to compute the transposed.
-            collection = collection.T
-            self.dict_init = patches_1d.extract_patches_1d(
-                collection, m, wave_pos, n, l2_normed=l2_normed, patch_min=patch_min,
-                random_state=random_state
-            )
-            self.dict_init = self.dict_init.T  # This leaves dict_init as a Fortran array
+        # Explicit initial dictionary (trained or not).
+        if self.dict_init is not None:
+            self.p_size, self.d_size = self.dict_init.shape
 
-        # Take dict_init as the initial dictionary.
-        elif isinstance(dict_init, (list, tuple, np.ndarray)):
-            dict_init = np.asarray(dict_init)
-            m, n = dict_init.shape
-            if m >= n:
-                raise ValueError("the dictionary must be overcomplete (m < n).")
-            if trained:
-                self.components = dict_init
-                self.trained = trained
-            else:
-                self.dict_init = dict_init
-            pass
-
-        # Raise an exception if none of the above
+        # Get the initial atoms from a set of signals.
         else:
-            _type = type(dict_init).__name__
-            raise TypeError(
-                "'%s' is not recognized as an instance of DictionarySpams" % _type
+            self.dict_init = patches_1d.extract_patches_1d(
+                signal_pool,
+                self.p_size,
+                wave_pos=self.wave_pos,
+                n_patches=self.d_size,
+                l2_normed=self.l2_normed,
+                patch_min=self.patch_min,
+                random_state=self.random_state
             )
+            self.components = self.dict_init
 
-    def train(self, patches, n_iter=None, **kwargs):
+    def train(self, patches, lambda1=None, n_iter=None, verbose=False, **kwargs):
         """Train the dictionary with a set of patches.
 
         Calls 'spams.trainDL' to train the dictionary by solving the
         learning problem
-            min_{D in C} (1/n) sum_{i=1}^n (1/2)||x_i-Dalpha_i||_2^2  s.t. ...
-                                                     ||alpha_i||_1 <= lambda1 .
+            min_{D in C} (1/d_size) sum_{i=1}^d_size {
+                (1/2)||x_i-Dalpha_i||_2^2  s.t. ||alpha_i||_1 <= lambda1
+            } .
 
         Parameters
         ----------
-        patches : array-like(n_samples, n_features)
-            Training vector.
+        patches : 2d-array(samples, signals)
+            Training patches.
+
+        lambda1 : float, optional
+            Regularization parameter of the learning algorithm.
+            It is not needed if already specified at initialization.
 
         n_iter : int, optional
             Total number of iterations to perform.
@@ -485,132 +503,53 @@ class DictionarySpams:
             during the corresponding number of seconds.
             It is not needed if already specified at initialization.
 
-        n_train : int, optional
-            Number of patches (components) used to train the dictionary.
-            It is not needed if already specified at initialization.
+        verbose : bool, optional
+            If True print the iterations (might not be shown in real time).
+
+        **kwargs
+            Passed directly to 'spams.trainDL', see [1].
 
         Additional parameters will be passed to the SPAMS training function.
 
         """
-        if len(patches) != len(self.dict_init):
+        if len(patches) != self.p_size:
             raise ValueError("the length of 'patches' must be the same as the"
-                             " atoms of the dictionary.")
-        if n_iter is None and self.n_iter is None:
-            raise TypeError("'n_iter' not specified.")
-
+                             " atoms of the dictionary")
         if n_iter is not None:
             self.n_iter = n_iter
-        if 'lambda1' in kwargs:
-            self.lambda1 = kwargs.pop('lambda1')
+        elif self.n_iter is None:
+            raise TypeError("'n_iter' not specified")
+            
+        if lambda1 is not None:
+            self.lambda1 = lambda1
+        elif self.lambda1 is None:
+            raise TypeError("'lambda1' not specified")
+
         self.n_train = patches.shape[1]
 
-        self.components = spams.trainDL(
+        tic = time.time()
+        self.components, model = spams.trainDL(
             patches,
-            D=self.dict_init,
+            D=self.dict_init,  # Cool-start
             batchsize=self.batch_size,
             lambda1=self.lambda1,
             iter=self.n_iter,
-            mode=self.mode_traindl,  # default mode is 2
+            mode=self.mode_traindl,  # Default mode is 2
+            verbose=verbose,
+            return_model=True,
             **kwargs
         )
+        tac = time.time()
+
         self.trained = True
 
-    def optimum_reconstruct(self, x0, x1, sc_lambda0, loss_fun=None,
-                            tol=1e-3, step=1, method='SLSQP', full_out=False,
-                            wave_pos=None, **kwargs_minimize):
-        """Optimum reconstruction according to a loss function.
-
-        Finds the best reconstruction that can make the dictionary with its
-        current parameters (previously configured). To do so, it looks for the
-        optimum value of sc_lambda which minimizes the loss function 'loss_fun'.
-
-        The optimization of lambda is made in a logarithmic scale.
-
-        CAUTION: It might take seconds, hours, or even return 42.
-
-
-        PARAMETERS
-        ----------
-        x0, x1 : array
-            Original (normalized) and noisy signal, respectively. They can be
-            the same in case there is no "original" signal to compare with.
-
-        sc_lambda0 : float
-            Initial guess of sc_lambda parameter.
-
-        loss_fun : function(x0, rec) -> float, optional
-            Loss function which takes as argumetns 'x0' and 'rec', and returns
-            a float value to be minimized. If none, the DSSIM will be used.
-
-        tol : float, optional
-            Tolerance for termination of the SciPy's minimize_scalar algorithm.
-            1e-3 by default. (It is assigned to the corresponding solver chosen
-            by 'method').
-
-        step : int, optional
-            Sample interval between each patch extracted from x. Determines
-            the number of patches to be extracted. 1 by default.
-
-        method : str, optional
-            Method for solving the minimization problem, 'SLSQP' by default.
-            For more details, see documentation page of
-            "scipy.optimize.minimize_scalar".
-
-        full_out : bool, optional
-            If True, it also returns the OptimizedResult.
-            False by default.
-
-        wave_pos : array-like (p0, p1) of integers, optional
-            Index positions of the signal where to compute the DSSIM. If not
-            provided, it will be computed over all signals.
-
-        **kwargs_minimize
-            Additional keyword arguments passed to 'scipy.optimize.minimize'.
-
-        RETURNS
-        -------
-        clean : ndarray
-            Optimum reconstruction of the signal.
-
-        res : OptimizedResult, only returned if `full_out == True`.
-            Optimization result of SciPy's minimize function. Important
-            attributes are: `x` the optimum log10(sc_lambda) and `fun` the
-            optimum SSIM value. See 'scipy.optimize.OptimizeResult' for a
-            general description of attributes.
-
-        """        
-        if loss_fun is None:
-            loss_fun = metrics.dssim
-            norm = True
+        if self.n_iter < 0:
+            self.t_train = -self.n_iter
+            self.n_iter = model['iter']
         else:
-            norm = False  # Lets loss_fun manage the scaling
+            self.t_train = tac - tic
 
-        clean = [None]  # 'trick' for recovering the optimum reconstruction
-
-        if wave_pos is not None:
-            wave_pos = slice(*wave_pos)
-
-        # The minimization is performed in logarithmic scale for performance
-        # reasons.
-        def fun2min(sc_lambda):
-            """Function to be minimized."""
-            self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
-            os.write(1, "{}\n".format(self.sc_lambda).encode())
-            clean[0] = self.reconstruct(x1, step=step, norm=norm)
-            return loss_fun(x0[wave_pos], clean[0][wave_pos])
-
-        res = sp.optimize.minimize(
-            fun2min,
-            x0=np.log10(sc_lambda0),
-            method=method,
-            tol=tol,
-            **kwargs_minimize
-        )
-        clean = clean[0]
-
-        return (clean, res) if full_out else clean
-
-    def reconstruct(self, signal, step=1, norm=True, with_code=False, **kwargs):
+    def reconstruct(self, signal, sc_lambda=None, step=1, l2_normed=True, with_code=False):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
         Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
@@ -620,59 +559,208 @@ class DictionarySpams:
 
         Parameters
         ----------
-        signal : array-like
+        signal : ndarray
             Sample to be reconstructed.
 
-        step : int, optional
+        sc_lambda : float, optional
+            Regularization parameter of the sparse coding transformation.
+            It is not needed if already specified at initialization.
+
+        step : int, 1 by default
             Sample interval between each patch extracted from signal.
             Determines the number of patches to be extracted. 1 by default.
 
-        norm : boolean, optional
-            Normalize the result to its maximum amplitude after adding the
-            noise. True by default.
+        l2_normed : boolean, True by default
+            Normalize the result so that the euclidian norm is 1.
 
-        with_code : boolean, optional.
-            If True, also returns the coefficients array. False by default.
-
-        Additional parameters will be passed to the SPAMS function 'lasso'.
+        with_code : boolean, False by default.
+            If True, also returns the coefficients array.
 
         Returns
         -------
         signal_rec : array
             Reconstructed signal.
 
-        code : array(m, n)
+        code : array(p_size, d_size), optional
             Transformed data, encoded as a sparse combination of atoms.
+            Returned when 'with_code' is True.
 
         """
-        # A 'lambda1' here is assumed to be the lambda for the reconstruction.
-        if 'lambda1' in kwargs:
-            self.sc_lambda = kwargs.pop('lambda1')
-        elif 'sc_lambda' in kwargs:
-            self.sc_lambda = kwargs.pop('sc_lambda')
-        signal = np.asarray(signal)
-        # TODO: new function to avoid having to 'compute' the transposed
+        if not isinstance(signal, np.ndarray):
+            raise TypeError("'signal' must be a numpy array")
+        
+        if signal.ndim == 1:
+            signal = signal.reshape(-1, 1)  # to column vector
+            keepdims = False  # Return a 1d-array
+        else:
+            keepdims = True  # Return a 2d-array
+
+        if sc_lambda is not None:
+            self.sc_lambda = sc_lambda
+        elif self.sc_lambda is None:
+            raise TypeError("'sc_lambda' not specified")
+        
         patches = patches_1d.extract_patches_1d(
             signal,
-            patch_size=len(self.components),
-            step=step
-        ).T
+            patch_size=self.p_size,
+            step=step,
+            l2_normed=True,
+        )
         code = spams.lasso(
             patches,
             D=self.components,
             lambda1=self.sc_lambda,
             mode=self.mode_lasso
-        ).todense()
-        patches = np.dot(self.components, code)
-        # TODO: new function to avoid having to compute the transposed
-        signal_rec = patches_1d.reconstruct_from_patches_1d(
-            np.ascontiguousarray(patches.T),  # (p, m) with C-contiguous order
-            len(signal)
         )
+        patches = self.components @ code
 
-        if norm and signal_rec.any():  # Avoids ZeroDivisionError
-            coef = 1 / abs(signal_rec).max()
-            signal_rec *= coef
-            code *= coef
+        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step, keepdims=keepdims)
+
+        if l2_normed and signal_rec.any():
+            norm = np.linalg.norm(signal_rec)
+            signal_rec /= norm
+            code /= norm
 
         return (signal_rec, code) if with_code else signal_rec
+
+    def optimum_reconstruct(self, noisy, ref, sc_lambda0, loss_fun=None, l2_normed=True,
+                            tol=1e-3, step=1, method='SLSQP', full_out=False,
+                            wave_pos=None, verbose=False, **kwargs_minimize):
+        """Optimum reconstruction according to a loss function.
+
+        Finds the best reconstruction that can make the dictionary with its
+        current parameters (previously configured). To do so, it looks for the
+        optimum value of sc_lambda which minimizes the loss function
+        'loss_fun'.
+
+        The optimization of lambda is made in logarithmic scale.
+
+        CAUTION: It might take seconds, hours, or even return 42.
+
+
+        PARAMETERS
+        ----------
+        noisy, ref : 1d-array
+            Reference (normalized) and noisy signal, respectively. They can be
+            the same in case there is no 'ref' signal to compare with.
+
+        sc_lambda0 : float
+            Initial guess of sc_lambda parameter.
+
+        loss_fun : function(rec, ref) -> float, optional
+            Loss function which takes as argumetns 'rec' and 'ref', and returns
+            a float value, which is the target to be minimized.
+            If None, 'grawadile.estimators.dssim' will be used.
+
+        l2_normed : bool, True by default
+            Normalize the reconstructions so that their euclidian norm is 1.
+
+        tol : float, 1e-3 by default
+            Tolerance parameter of SciPy's 'minimize' function.
+
+        step : int, 1 by default
+            Sample interval between each patch extracted from noisy. Determines
+            the number of patches to be extracted.
+
+        method : str, 'SLSQP' by default
+            Method for solving the minimization problem.
+            See [1] for more details.
+
+        full_out : bool, False by default
+            If True, it also returns SciPy's OptimizedResult.
+
+        wave_pos : array-like (p0, p1) of integers, optional
+            Index positions of the signal where to compute the DSSIM.
+            If None, DSSIM will be computed over the whole signals.
+
+        verbose : bool, False by default
+            If True, print to terminal each 'sc_lambda' tested by SciPy's
+            'minimize' function.
+
+        **kwargs_minimize
+            Additional keyword arguments passed to SciPy's 'minimize' function.
+            See [2] for more details.
+
+        RETURNS
+        -------
+        rec : 1d-array
+            Optimum reconstruction of the signal.
+
+        res : OptimizedResult, returned if 'full_out' is True.
+            Optimization result of SciPy's minimize function. Important
+            attributes are: `x` the optimum log10(sc_lambda) and `fun` the
+            optimum SSIM value.
+            See [2] for a detailed description of attributes.
+
+        """        
+        if loss_fun is None:
+            loss_fun = estimators.dssim
+
+        sc_lambda_old = self.sc_lambda
+        rec = None  # Will store the last reconstruction performed
+
+        if wave_pos is None:
+            def _fun2min(sc_lambda):
+                """Function to be minimized."""
+                nonlocal rec
+                # Minimize in logarithmic scale for performance reasons.
+                self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
+                if verbose:
+                    os.write(1, f"{self.sc_lambda}\n".encode())  # In case of using jupyterlab
+                rec = self.reconstruct(noisy, step=step, l2_normed=l2_normed)
+                return loss_fun(rec, ref)
+        else:
+            wave_pos = slice(*wave_pos)
+            def _fun2min(sc_lambda):
+                """Function to be minimized."""
+                nonlocal rec
+                # Minimize in logarithmic scale for performance reasons.
+                self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
+                if verbose:
+                    os.write(1, f"{self.sc_lambda}\n".encode())  # In case of using jupyterlab
+                rec = self.reconstruct(noisy, step=step, l2_normed=l2_normed)
+                return loss_fun(rec[wave_pos], ref[wave_pos])
+
+        res = sp.optimize.minimize(
+            _fun2min,
+            ref=np.log10(sc_lambda0),
+            method=method,
+            tol=tol,
+            **kwargs_minimize
+        )
+
+        self.sc_lambda = sc_lambda_old
+
+        return (rec, res) if full_out else rec
+
+    def _check_initial_parameters(self, signal_pool):
+        # Explicit initial dictionary.
+        if self.dict_init is not None:
+            if not isinstance(self.dict_init, np.ndarray):
+                raise TypeError(
+                    f"'{type(self.dict_init).__name__}' is not a valid 'dict_init'"
+                )
+            if not self.dict_init.flags.f_contiguous:
+                raise ValueError("'dict_init' must be a F-contiguous array")
+            if (self.dict_init.shape[0] >= self.dict_init.shape[1]
+                and not self.ignore_completeness):
+                raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
+        
+        # Signal pool from where to extract the initial dictionary.
+        elif signal_pool is not None:
+            if not isinstance(signal_pool, np.ndarray):
+                raise TypeError(
+                    f"'{type(signal_pool).__name__}' is not a valid 'signal_pool'"
+                )
+            if not signal_pool.flags.f_contiguous:
+                raise ValueError("'signal_pool' must be a F-contiguous array")
+            if None in (self.p_size, self.d_size):
+                raise TypeError(
+                    f"'p_size' and 'd_size' must be explicitly provided along 'signal_pool'"
+                )
+            if self.p_size >= self.d_size:
+                raise ValueError("the dictionary must be overcomplete (p_size < d_size)")
+        
+        # None of the above.
+        else:
+            raise ValueError("either 'dict_init' or 'signal_pool' must be provided")

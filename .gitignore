@@ -138,11 +138,12 @@ dmypy.json
 ######################
 
 data/
+tests/
+TODO.txt
 *.ipynb
 *.bar
 *.err
 *.out
-paper_plots
 *.sublime-project
 *.sublime-workspace
 *.zip

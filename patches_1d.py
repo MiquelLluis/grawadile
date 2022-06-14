@@ -1,106 +1,88 @@
+import warnings
+
 import numpy as np
 
 
-# PENDING TO REARRANGE TO ROW-MAJOR ORDER
-# def slidingWindow(sequence ,winSize ,step=1):
-#     """Returns a generator that will iterate through
-#     the defined chunks of input sequence.  Input sequence
-#     must be iterable."""
+def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
+                       random_state=None, step=1, l2_normed=False,
+                       patch_min=1):
+    if signals.ndim != 2:
+        raise ValueError("'signals' must be a 2d-array")
 
-#     # Verify the inputs
-#     try:
-#         it = iter(sequence)
-#     except TypeError:
-#         raise Exception("**ERROR** sequence must be iterable.")
-#     if not ((type(winSize) == type(0)) and (type(step) == type(0))):
-#         raise Exception("**ERROR** type(winSize) and type(step) must be int.")
-#     if step > winSize:
-#         raise Exception("**ERROR** step must not be larger than winSize.")
-#     if winSize > len(sequence):
-#         raise Exception("**ERROR** winSize must not be larger than sequence length.")
-
-#     # Pre-compute number of chunks to emit
-#     numOfChunks = ((len(sequence ) -winSize ) /step ) +1
-
-#     # Do the work
-#     for i in range(0 , numOfChunks *step ,step):
-#         yield int(i), sequence[i: i +winSize]
-
-
-# MODIFIED -> To C contiguous NOTATION (M[samples][features])
-def extract_patches_1d(A, patch_size, wave_pos=None, n_patches=-1,
-                       random_state=0, step=1, l2_normed=False,
-                       patch_min=16):
-    # wave_pos -> Beggining and ending indices of each wave in A; 
-    #
-    n,m = np.atleast_2d(A).shape
-    max_patches_per_sample = int((m - patch_size ) / step + 1)
-    max_patches = max_patches_per_sample * n
-    if n_patches > max_patches:
-        _txt = (
-            "WARNING: The keyword argument 'n_patches' ({:d}) exceeds"
-            " the maximum number of patches that can be extracted ({:d})."
-            " The maximum number of patches will be extracted instead."
+    rng = np.random.default_rng(random_state)
+    l_signals, n_signals = signals.shape
+    max_pps = (l_signals - patch_size) / step + 1  # Maximum patches per signal
+    if not max_pps.is_integer() and wave_pos is None:
+        warnings.warn(
+            "'signals' cannot be fully divided into patches, the last"
+            f" {(max_pps-1)*step % step:.0f} bins of each signal will be left out",
+            RuntimeWarning
         )
-        print(_txt.format(n_patches, max_patches))
-        n_patches = -1
-    
-    # All possible patches
-    if (n_patches < 0) or (n_patches == max_patches):
-        col = 0
-        if n == 1:
-            D = np.zeros([max_patches_per_sample, patch_size])
-            for j in range(0 , max_patches_per_sample*step, step):
-                D[col]=A[j:j+patch_size]
-                col +=1
-        else:
-            D = np.zeros([max_patches, patch_size])
-            for i in range(n):
-                for j in range(0, max_patches_per_sample*step, step):
-                    D[col]=A[i,j:j+patch_size]
-                    col +=1
-    
-    # Limited number of patches
+    max_pps = int(max_pps)
+
+    # Compute the maximum number of patches that can be extracted and the
+    # limits from where to extract patches for each signal.
+    if wave_pos is None:
+        window_limits = [(0, l_signals-patch_size+1)] * n_signals
+        max_patches = max_pps * n_signals
     else:
-        D = np.zeros([n_patches, patch_size])
-        np.random.seed(random_state)
-        if wave_pos is None:
-            for k in range(n_patches):
-                i = np.random.randint(0, n)
-                j = np.random.randint(0, m-2)
-                D[k] = A[i,j:j+patch_size]
-        else:
-            for k in range(n_patches):
-                i = np.random.randint(0,n)  # Sample index
-                l0, l1 = wave_pos[i]  # Window indices
-                l0 += patch_min - patch_size  # Extra space before the beggining of wave
-                l1 -= patch_min  # Ensure taking at least 'patch_min' points
-                if l0 < 0:
-                    l0 = 0
-                if l1 + patch_size >= m:
-                    l1 = m - patch_size
-                j = np.random.randint(l0, l1)
-                #
-                D[k] = A[i,j:j+patch_size]
+        window_limits = []
+        max_patches = 0
+        for p0, p1 in wave_pos:
+            p0 += patch_min - patch_size
+            p1 -= patch_min
+            if p0 < 0:
+                p0 = 0
+            if p1 + patch_size >= l_signals:
+                p1 = l_signals - patch_size
+            window_limits.append((p0, p1))
+            max_patches += int(np.ceil((p1-p0)/step))
+
+    if n_patches is None:
+        n_patches = max_patches
+    elif n_patches > max_patches:
+        raise ValueError(
+            f"the keyword argument 'n_patches' ({n_patches}) exceeds"
+            f" the maximum number of patches that can be extracted ({max_patches})."
+        )
+    
+    patches = np.empty((patch_size, n_patches), order='F')
+
+    # All possible patches.
+    if n_patches == max_patches:
+        k = 0
+        for i in range(n_signals):
+            p0, p1 = window_limits[i]
+            for j in range(p0, p1, step):
+                patches[:,k] = signals[j:j+patch_size,i]
+                k += 1
+    # Limited number of patches randomly selected.
+    else:
+        for k in range(n_patches):
+            i = rng.integers(0, n_signals)
+            j = rng.integers(*window_limits[i])
+            patches[:,k] = signals[j:j+patch_size,i]
 
     # Normalize each patch to its L2 norm
     if l2_normed:
-        D /= np.linalg.norm(D, axis=1, keepdims=True)
+        patches /= np.linalg.norm(patches, axis=0)
 
-    return D    
+    return patches
 
 
-# REARRANGED TO M[samples][features]
-def reconstruct_from_patches_1d(patches, signal_len):
-    n, m = patches.shape
-    step = int(round((signal_len - m) / (n - 1)))
-    y   = np.zeros(signal_len)
-    aux = np.zeros(signal_len)
-    for i in range(n):       
-        y[i*step:i*step+m]   += patches[i]
-        aux[i*step:i*step+m] += 1.0  # faster than np.ones(m)
-    aux[i*step+m:] = 1  # remaining samples of 'aux'
-    return np.nan_to_num(y/aux)
+def reconstruct_from_patches_1d(patches, step, keepdims=False):
+    l_patches, n_patches = patches.shape
+    total_len = (n_patches - 1) * step + l_patches
+    
+    reconstructed = np.zeros(total_len)
+    normalizer = np.zeros_like(reconstructed)
+    for i in range(n_patches):
+        reconstructed[i*step:i*step+l_patches] += patches[:,i]
+        normalizer[i*step:i*step+l_patches] += 1
+    normalizer[i*step+l_patches:] = 1
+    reconstructed /= normalizer
+
+    return reconstructed if not keepdims else reconstructed.reshape(-1,1)
 
 
 def pad_centered(x, length):
