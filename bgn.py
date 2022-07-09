@@ -18,7 +18,7 @@ class NonwhiteGaussianNoise:
     noise : array-like, optional
         Alternative noise array already generated.
 
-    psd : 2d array-like, (time_samples, psd_samples)
+    psd : 2d array-like, (frequency points, psd samples)
         Power Spectral Density of the non-white part of the noise.
 
     sf : int
