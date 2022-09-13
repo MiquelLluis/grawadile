@@ -13,5 +13,5 @@ from . import dictionary_learning
 from . import estimators
 from . import patches_1d
 from . import plotters
-from . import rrof
+# from . import rrof
 from . import waveforms
