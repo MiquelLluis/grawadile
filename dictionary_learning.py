@@ -378,6 +378,10 @@ class DictionarySpams:
     l2_normed : bool, True by default
         If True, normalize atoms to their L2-Norm.
 
+    allow_allzeros : bool, True by default
+        Kwarg to pass to patches_1d.extract_patches_1d if initializing the
+        dictionary from a signal_pool.
+
     n_iter : int, optional
         Total number of iterations to perform.
         If a negative number is provided it will perform the computation during
@@ -437,9 +441,10 @@ class DictionarySpams:
     """
     def __init__(self, dict_init=None, signal_pool=None, wave_pos=None,
                  p_size=None, d_size=None, lambda1=None, batch_size=64,
-                 identifier='', l2_normed=True, n_iter=None, n_train=None,
-                 patch_min=1, random_state=None, sc_lambda=None, trained=False,
-                 ignore_completeness=False, mode_traindl=0, mode_lasso=2):
+                 identifier='', l2_normed=True, allow_allzeros=True,
+                 n_iter=None, n_train=None, patch_min=1, random_state=None,
+                 sc_lambda=None, trained=False, ignore_completeness=False,
+                 mode_traindl=0, mode_lasso=2):
         self.dict_init = dict_init
         self.components = dict_init
         self.wave_pos = wave_pos
@@ -449,6 +454,7 @@ class DictionarySpams:
         self.batch_size = batch_size
         self.identifier = identifier
         self.l2_normed = l2_normed
+        self.allow_allzeros = allow_allzeros
         self.n_iter = n_iter
         self.t_train = -n_iter if n_iter is not None and n_iter < 0 else None
         self.n_train = n_train
@@ -474,6 +480,7 @@ class DictionarySpams:
                 wave_pos=self.wave_pos,
                 n_patches=self.d_size,
                 l2_normed=self.l2_normed,
+                allow_allzeros=self.allow_allzeros,
                 patch_min=self.patch_min,
                 random_state=self.random_state
             )

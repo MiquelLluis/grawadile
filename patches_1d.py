@@ -5,7 +5,10 @@ import numpy as np
 
 def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
                        random_state=None, step=1, l2_normed=False,
-                       patch_min=1):
+                       patch_min=1, allow_allzeros=True):
+    # TODO DOC:
+    #   allow_allzeros: when extracting random patches, if False and l2_normed=True,
+    #       generate another random window position until the l2 norm is != 0.
     if signals.ndim != 2:
         raise ValueError("'signals' must be a 2d-array")
 
@@ -48,7 +51,7 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
     
     patches = np.empty((patch_size, n_patches), order='F')
 
-    # All possible patches.
+    # Extract all possible patches.
     if n_patches == max_patches:
         k = 0
         for i in range(n_signals):
@@ -56,12 +59,23 @@ def extract_patches_1d(signals, patch_size, wave_pos=None, n_patches=None,
             for j in range(p0, p1, step):
                 patches[:,k] = signals[j:j+patch_size,i]
                 k += 1
-    # Limited number of patches randomly selected.
+    # Extract a limited number of patches randomly selected.
+    # <<<
+    elif l2_normed and not allow_allzeros:
+        for k in range(n_patches):
+            i = rng.integers(0, n_signals)
+            j = rng.integers(*window_limits[i])
+            signal_aux = signals[j:j+patch_size,i]
+            while not signal_aux.any():
+                j = rng.integers(*window_limits[i])
+                signal_aux = signals[j:j+patch_size,i]
+            patches[:,k] = signal_aux
     else:
         for k in range(n_patches):
             i = rng.integers(0, n_signals)
             j = rng.integers(*window_limits[i])
             patches[:,k] = signals[j:j+patch_size,i]
+    # >>>
 
     # Normalize each patch to its L2 norm
     if l2_normed:
