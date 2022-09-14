@@ -556,7 +556,8 @@ class DictionarySpams:
         else:
             self.t_train = tac - tic
 
-    def reconstruct(self, signal, sc_lambda=None, step=1, l2_normed=True, with_code=False):
+    def reconstruct(self, signal, sc_lambda=None, step=1, l2_normed=True, with_code=False,
+            **kwargs):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
         Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
@@ -582,6 +583,9 @@ class DictionarySpams:
 
         with_code : boolean, False by default.
             If True, also returns the coefficients array.
+
+        **kwargs
+            Passed directly to 'spams.trainDL', see [1].
 
         Returns
         -------
@@ -611,13 +615,14 @@ class DictionarySpams:
             signal,
             patch_size=self.p_size,
             step=step,
-            l2_normed=True,
+            l2_normed=False
         )
         code = spams.lasso(
             patches,
             D=self.components,
             lambda1=self.sc_lambda,
-            mode=self.mode_lasso
+            mode=self.mode_lasso,
+            **kwargs
         )
         patches = self.components @ code
 
