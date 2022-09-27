@@ -2,6 +2,8 @@
 #
 # Developed by Miquel Lluís Llorens Monteagudo <miquel.llorens@uv.es>
 #
+#
+# Dependencies: NumPy, SciPy, Scikit-learn, Spams-Python
 
 
 __version__ = '2022.06.12'
