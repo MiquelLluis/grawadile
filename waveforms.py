@@ -4,7 +4,7 @@ from numpy.random import uniform
 from . import config as cfg
 
 
-def gen_set(sq):
+def gen_set(sq, sf=cfg.SF):
     """Generates three sets of noise transients, one of each kind of waveform.
 
     Generates 'sq' noise transients for each kind of waveform: Sine Gaussisan,
@@ -43,9 +43,9 @@ def gen_set(sq):
     mtG = cfg.LIM0['MT']
     mtRD = np.sqrt(2) * cfg.LIM0['MQ'] / (np.pi * cfg.LIM0['mf0']) * (-np.log(cfg.TH))
     # Maximum signal length (rounded UP)
-    mslSG = int(np.ceil(mtSG * cfg.SF))
-    mslG = int(np.ceil(mtG * cfg.SF))
-    mslRD = int(np.ceil(mtRD * cfg.SF))
+    mslSG = int(np.ceil(mtSG * sf))
+    mslG = int(np.ceil(mtG * sf))
+    mslRD = int(np.ceil(mtRD * sf))
 
     # Waveform signals
     sigSG = np.zeros((sq[0], mslSG), dtype=float)  # Sinus Gaussian
@@ -56,40 +56,40 @@ def gen_set(sq):
     sigGp = np.empty((sq[1], 4), dtype=float)
     sigRDp = np.empty((sq[2], 6), dtype=float)
     # Sample time points (s) (not centered!)
-    tp = np.arange(0, max(mtSG, mtG, mtRD), cfg.ST)
+    tp = np.arange(0, max(mtSG, mtG, mtRD), 1/sf)
 
     # Sample generation
     # ---- Sine Gaussian ----
     for i in range(sq[0]):
         f0, q, hrss, t = gen_params_0sg()
 
-        sl = int(t*cfg.SF)  # Particular signal length
+        sl = int(t*sf)  # Particular signal length
         signal = wave_sg(tp[:sl], t/2, f0, q, hrss)
 
         # Store the signal centered and normalized
-        off = int((mtSG - t) / 2 * cfg.SF)  # Offset
+        off = int((mtSG - t) / 2 * sf)  # Offset
         sigSG[i, off:off+sl] = signal / max(abs(signal))
         sigSGp[i] = (t, f0, q, hrss, off, off+sl)
     # ---- Gaussian ----
     for i in range(sq[1]):
         hrss, t = gen_params_0g()
 
-        sl = int(t*cfg.SF)  # Particular signal length
+        sl = int(t*sf)  # Particular signal length
         signal = wave_g(tp[:sl], t/2, hrss, t)
 
         # Store the signal centered and normalized
-        off = int((mtG - t) / 2 * cfg.SF)  # Offset
+        off = int((mtG - t) / 2 * sf)  # Offset
         sigG[i, off:off+sl] = signal / max(abs(signal))
         sigGp[i] = (t, hrss, off, off+sl)
     # ---- Ring-Down ----
     for i in range(sq[2]):
         f0, q, hrss, t = gen_params_0rd()
 
-        sl = int(t*cfg.SF)  # Particular signal length
+        sl = int(t*sf)  # Particular signal length
         signal = wave_rd(tp[:sl], 0, f0, q, hrss)
 
         # Store the signal centered and normalized
-        off = int((mtRD - t) / 2 * cfg.SF)  # Offset
+        off = int((mtRD - t) / 2 * sf)  # Offset
         sigRD[i, off:off+sl] = signal / max(abs(signal))
         sigRDp[i] = (t, f0, q, hrss, off, off+sl)
 
