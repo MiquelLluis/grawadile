@@ -635,6 +635,88 @@ class DictionarySpams:
 
         return (signal_rec, code) if with_code else signal_rec
 
+    def reconstruct_bisect(self, signal, lambda0=None, step=1, l2_normed=True, with_code=False,
+            **kwargs):
+        """Reconstruct a signal as a sparse combination of dictionary atoms.
+
+        Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
+        default it solves:
+            min_{alpha} 0.5||x-Dalpha||_2^2 + lambda1||alpha||_1
+                                        + 0.5 lambda2||alpha||_2^2
+
+        Parameters
+        ----------
+        signal : ndarray
+            Sample to be reconstructed.
+
+        sc_lambda : float, optional
+            Regularization parameter of the sparse coding transformation.
+            It is not needed if already specified at initialization.
+
+        step : int, 1 by default
+            Sample interval between each patch extracted from signal.
+            Determines the number of patches to be extracted. 1 by default.
+
+        l2_normed : boolean, True by default
+            Normalize the result so that the euclidian norm is 1.
+
+        with_code : boolean, False by default.
+            If True, also returns the coefficients array.
+
+        **kwargs
+            Passed directly to 'spams.trainDL', see [1].
+
+        Returns
+        -------
+        signal_rec : array
+            Reconstructed signal.
+
+        sc_lambda : float
+            Best lambda found.
+
+        code : array(p_size, d_size), optional
+            Transformed data, encoded as a sparse combination of atoms.
+            Returned when 'with_code' is True.
+
+        """
+        if not isinstance(signal, np.ndarray):
+            raise TypeError("'signal' must be a numpy array")
+        
+        if signal.ndim == 1:
+            signal = signal.reshape(-1, 1)  # to column vector
+            keepdims = False  # Return a 1d-array
+        else:
+            keepdims = True  # Return a 2d-array
+
+        if sc_lambda is not None:
+            self.sc_lambda = sc_lambda
+        elif self.sc_lambda is None:
+            raise TypeError("'sc_lambda' not specified")
+        
+        patches = patches_1d.extract_patches_1d(
+            signal,
+            patch_size=self.p_size,
+            step=step,
+            l2_normed=False
+        )
+        code = spams.lasso(
+            patches,
+            D=self.components,
+            lambda1=self.sc_lambda,
+            mode=self.mode_lasso,
+            **kwargs
+        )
+        patches = self.components @ code
+
+        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step, keepdims=keepdims)
+
+        if l2_normed and signal_rec.any():
+            norm = np.linalg.norm(signal_rec)
+            signal_rec /= norm
+            code /= norm
+
+        return (signal_rec, code) if with_code else signal_rec
+
     def optimum_reconstruct(self, noisy, ref, sc_lambda0, loss_fun=None, l2_normed=True,
                             tol=1e-3, step=1, method='SLSQP', full_out=False,
                             wave_pos=None, verbose=False, **kwargs_minimize):
