@@ -12,7 +12,7 @@ from . import patches_1d
 
 
 # Remove warning from OpenMP, present in older versions of python-spams.
-if not '__version__' in dir(spams) or spams.__version__ < '2.6.5.4':
+if not '__version__' in dir(spams) or spams.__version__ <= '2.6.5.4':
     os.environ['KMP_WARNINGS'] = 'FALSE'
 
 
