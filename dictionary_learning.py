@@ -557,7 +557,7 @@ class DictionarySpams:
             self.t_train = tac - tic
 
     def reconstruct(self, signal, sc_lambda=None, step=1, l2_normed=True, with_code=False,
-            **kwargs):
+                    **kwargs):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
         Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
@@ -635,197 +635,28 @@ class DictionarySpams:
 
         return (signal_rec, code) if with_code else signal_rec
 
-    def reconstruct_bisect(self, signal, lambda0=None, step=1, l2_normed=True, with_code=False,
-            **kwargs):
-        """Reconstruct a signal as a sparse combination of dictionary atoms.
+    def reconstruct_autolambda(self, signal, zero_limit, step=1, normed=True, with_code=False,
+                               **kwargs):
+        """TODO
 
-        Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
-        default it solves:
-            min_{alpha} 0.5||x-Dalpha||_2^2 + lambda1||alpha||_1
-                                        + 0.5 lambda2||alpha||_2^2
-
-        Parameters
-        ----------
-        signal : ndarray
-            Sample to be reconstructed.
-
-        sc_lambda : float, optional
-            Regularization parameter of the sparse coding transformation.
-            It is not needed if already specified at initialization.
-
-        step : int, 1 by default
-            Sample interval between each patch extracted from signal.
-            Determines the number of patches to be extracted. 1 by default.
-
-        l2_normed : boolean, True by default
-            Normalize the result so that the euclidian norm is 1.
-
-        with_code : boolean, False by default.
-            If True, also returns the coefficients array.
-
-        **kwargs
-            Passed directly to 'spams.trainDL', see [1].
-
-        Returns
-        -------
-        signal_rec : array
-            Reconstructed signal.
-
-        sc_lambda : float
-            Best lambda found.
-
-        code : array(p_size, d_size), optional
-            Transformed data, encoded as a sparse combination of atoms.
-            Returned when 'with_code' is True.
-
-        """
-        if not isinstance(signal, np.ndarray):
-            raise TypeError("'signal' must be a numpy array")
-        
-        if signal.ndim == 1:
-            signal = signal.reshape(-1, 1)  # to column vector
-            keepdims = False  # Return a 1d-array
-        else:
-            keepdims = True  # Return a 2d-array
-
-        if sc_lambda is not None:
-            self.sc_lambda = sc_lambda
-        elif self.sc_lambda is None:
-            raise TypeError("'sc_lambda' not specified")
-        
-        patches = patches_1d.extract_patches_1d(
-            signal,
-            patch_size=self.p_size,
-            step=step,
-            l2_normed=False
-        )
-        code = spams.lasso(
-            patches,
-            D=self.components,
-            lambda1=self.sc_lambda,
-            mode=self.mode_lasso,
-            **kwargs
-        )
-        patches = self.components @ code
-
-        signal_rec = patches_1d.reconstruct_from_patches_1d(patches, step, keepdims=keepdims)
-
-        if l2_normed and signal_rec.any():
-            norm = np.linalg.norm(signal_rec)
-            signal_rec /= norm
-            code /= norm
-
-        return (signal_rec, code) if with_code else signal_rec
-
-    def optimum_reconstruct(self, noisy, ref, sc_lambda0, loss_fun=None, l2_normed=True,
-                            tol=1e-3, step=1, method='SLSQP', full_out=False,
-                            wave_pos=None, verbose=False, **kwargs_minimize):
-        """Optimum reconstruction according to a loss function.
-
-        Finds the best reconstruction that can make the dictionary with its
-        current parameters (previously configured). To do so, it looks for the
-        optimum value of sc_lambda which minimizes the loss function
-        'loss_fun'.
-
-        The optimization of lambda is made in logarithmic scale.
-
-        CAUTION: It might take seconds, hours, or even return 42.
-
-
-        PARAMETERS
-        ----------
-        noisy, ref : 1d-array
-            Reference (normalized) and noisy signal, respectively. They can be
-            the same in case there is no 'ref' signal to compare with.
-
-        sc_lambda0 : float
-            Initial guess of sc_lambda parameter.
-
-        loss_fun : function(rec, ref) -> float, optional
-            Loss function which takes as argumetns 'rec' and 'ref', and returns
-            a float value, which is the target to be minimized.
-            If None, 'grawadile.estimators.dssim' will be used.
-
-        l2_normed : bool, True by default
-            Normalize the reconstructions so that their euclidian norm is 1.
-
-        tol : float, 1e-3 by default
-            Tolerance parameter of SciPy's 'minimize' function.
-
-        step : int, 1 by default
-            Sample interval between each patch extracted from noisy. Determines
-            the number of patches to be extracted.
-
-        method : str, 'SLSQP' by default
-            Method for solving the minimization problem.
-            See [1] for more details.
-
-        full_out : bool, False by default
-            If True, it also returns SciPy's OptimizedResult.
-
-        wave_pos : array-like (p0, p1) of integers, optional
-            Index positions of the signal where to compute the DSSIM.
-            If None, DSSIM will be computed over the whole signals.
-
-        verbose : bool, False by default
-            If True, print to terminal each 'sc_lambda' tested by SciPy's
-            'minimize' function.
-
-        **kwargs_minimize
-            Additional keyword arguments passed to SciPy's 'minimize' function.
-            See [2] for more details.
-
-        RETURNS
-        -------
-        rec : 1d-array
-            Optimum reconstruction of the signal.
-
-        res : OptimizedResult, returned if 'full_out' is True.
-            Optimization result of SciPy's minimize function. Important
-            attributes are: `x` the optimum log10(sc_lambda) and `fun` the
-            optimum SSIM value.
-            See [2] for a detailed description of attributes.
+        Reconstrueix el senyal buscant la millor lambda que fa zeros els
+        extrems però produeix un senyal no nul a qualsevol part de la resta
+        del senyal.
 
         """        
-        if loss_fun is None:
-            loss_fun = estimators.dssim
+        
+        
 
-        sc_lambda_old = self.sc_lambda
-        rec = None  # Will store the last reconstruction performed
+        if normed and signal_rec.any():
+            norm = np.max(np.abs(signal_rec))
+            signal_rec /= norm
+            code /= norm
 
-        if wave_pos is None:
-            def _fun2min(sc_lambda):
-                """Function to be minimized."""
-                nonlocal rec
-                # Minimize in logarithmic scale for performance reasons.
-                self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
-                if verbose:
-                    os.write(1, f"{self.sc_lambda}\n".encode())  # In case of using jupyterlab
-                rec = self.reconstruct(noisy, step=step, l2_normed=l2_normed)
-                return loss_fun(rec, ref)
-        else:
-            wave_pos = slice(*wave_pos)
-            def _fun2min(sc_lambda):
-                """Function to be minimized."""
-                nonlocal rec
-                # Minimize in logarithmic scale for performance reasons.
-                self.sc_lambda = 10 ** float(sc_lambda)  # in case a 1d-array given
-                if verbose:
-                    os.write(1, f"{self.sc_lambda}\n".encode())  # In case of using jupyterlab
-                rec = self.reconstruct(noisy, step=step, l2_normed=l2_normed)
-                return loss_fun(rec[wave_pos], ref[wave_pos])
-
-        res = sp.optimize.minimize(
-            _fun2min,
-            ref=np.log10(sc_lambda0),
-            method=method,
-            tol=tol,
-            **kwargs_minimize
-        )
-
-        self.sc_lambda = sc_lambda_old
-
-        return (rec, res) if full_out else rec
+        out = [signal_rec, sc_lambda]
+        if with_code:
+            out.append(code)
+        
+        return out
 
     def _check_initial_parameters(self, signal_pool):
         # Explicit initial dictionary.
