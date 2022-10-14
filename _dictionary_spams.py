@@ -232,7 +232,7 @@ class DictionarySpams:
         else:
             self.t_train = tac - tic
 
-    def _reconstruct(self, signal, step, **kwargs):
+    def _reconstruct(self, signal, step, keepdims=True, **kwargs):
         patches = patches_1d.extract_patches_1d(
             signal,
             patch_size=self.p_size,
@@ -252,8 +252,7 @@ class DictionarySpams:
 
         return signal_rec, code
 
-    def reconstruct(self, signal, sc_lambda=None, step=1, normed=True, with_code=False,
-                    **kwargs):
+    def reconstruct(self, signal, sc_lambda=None, step=1, normed=True, with_code=False, **kwargs):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
         Uses the 'lasso' function of SPAMS to solve the Lasso problem. By
@@ -307,7 +306,7 @@ class DictionarySpams:
         elif self.sc_lambda is None:
             raise TypeError("'sc_lambda' not specified")
 
-        signal_rec, code = self._reconstruct(signal, step, **kwargs)
+        signal_rec, code = self._reconstruct(signal, step, keepdims=keepdims, **kwargs)
 
         if normed and signal_rec.any():
             norm = np.max(np.abs(signal_rec))
