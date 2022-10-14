@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-#
-# Developed by Miquel Lluís Llorens Monteagudo <miquel.llorens@uv.es>
-#
-#
-# Dependencies: NumPy, SciPy, Scikit-learn, Spams-Python
+""" Grawadile - Gravitational Wave Dictionary Learning
 
+Developed by Miquel Lluís Llorens Monteagudo <miquel.llorens@uv.es>
 
+Dependencies: NumPy, SciPy, Scikit-learn, and optionally Spams-Python
+
+"""
 __version__ = '2022.06.12'
 
 
