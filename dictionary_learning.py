@@ -1,3 +1,5 @@
+"""Try to import all available dictionaries."""
+
 try:
     from _dictionary_spams import DictionarySpams
 except ImportError:
