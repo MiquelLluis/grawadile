@@ -252,7 +252,7 @@ class DictionarySpams:
 
         return signal_rec, code
 
-    def reconstruct(self, signal, sc_lambda=None, step=1, l2_normed=True, with_code=False,
+    def reconstruct(self, signal, sc_lambda=None, step=1, normed=True, with_code=False,
                     **kwargs):
         """Reconstruct a signal as a sparse combination of dictionary atoms.
 
@@ -274,8 +274,8 @@ class DictionarySpams:
             Sample interval between each patch extracted from signal.
             Determines the number of patches to be extracted. 1 by default.
 
-        l2_normed : boolean, True by default
-            Normalize the result so that the euclidian norm is 1.
+        normed : boolean, True by default
+            Normalize the result to the maximum absolute value.
 
         with_code : boolean, False by default.
             If True, also returns the coefficients array.
@@ -309,8 +309,8 @@ class DictionarySpams:
 
         signal_rec, code = self._reconstruct(signal, step, **kwargs)
 
-        if l2_normed and signal_rec.any():
-            norm = np.linalg.norm(signal_rec)
+        if normed and signal_rec.any():
+            norm = np.max(np.abs(signal_rec))
             signal_rec /= norm
             code /= norm
 
