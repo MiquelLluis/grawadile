@@ -635,29 +635,6 @@ class DictionarySpams:
 
         return (signal_rec, code) if with_code else signal_rec
 
-    def reconstruct_autolambda(self, signal, zero_limit, step=1, normed=True, with_code=False,
-                               **kwargs):
-        """TODO
-
-        Reconstrueix el senyal buscant la millor lambda que fa zeros els
-        extrems però produeix un senyal no nul a qualsevol part de la resta
-        del senyal.
-
-        """        
-        
-        
-
-        if normed and signal_rec.any():
-            norm = np.max(np.abs(signal_rec))
-            signal_rec /= norm
-            code /= norm
-
-        out = [signal_rec, sc_lambda]
-        if with_code:
-            out.append(code)
-        
-        return out
-
     def _check_initial_parameters(self, signal_pool):
         # Explicit initial dictionary.
         if self.dict_init is not None:
