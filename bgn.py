@@ -170,7 +170,7 @@ class NonwhiteGaussianNoise:
         hf = np.fft.rfft(x)
         f = np.fft.rfftfreq(len(x), d=at)
         af = f[1]  # Already the frequency step since f[0] = 0 always
-        sum_ = sum(abs(hf)**2 / self.compute_psd(f))
+        sum_ = np.sum(abs(hf)**2 / self.compute_psd(f))
 
         return np.sqrt(4 * at**2 * af * sum_)
 
