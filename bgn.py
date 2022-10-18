@@ -150,7 +150,7 @@ class NonwhiteGaussianNoise:
         """Noise amplitude."""
         return np.sqrt(self.compute_psd(f))
 
-    def snr(self, x, at=cfg.ST):
+    def snr(self, x):
         """Signal to Noise Ratio.
 
         Parameters
@@ -166,12 +166,12 @@ class NonwhiteGaussianNoise:
             Signal to Noise Ratio
 
         """
+        at = 1 / self.sf
         ns = len(x)
-        hf = np.fft.fft(x)
-        f = np.fft.fftfreq(ns, d=at)
-        af = f[1]
-        # Only sum over positive frequencies
-        sum_ = sum((abs(hf[k])**2 / self.compute_psd(f[k]) for k in range(ns//2)))
+        hf = np.fft.rfft(x)
+        f = np.fft.rfftfreq(ns, d=at)
+        af = f[1]  # Already the frequency step since f[0] = 0 always
+        sum_ = sum(abs(hf)**2 / self.compute_psd(f))
 
         return np.sqrt(4 * at**2 * af * sum_)
 
