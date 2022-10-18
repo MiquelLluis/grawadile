@@ -40,7 +40,7 @@ class NonwhiteGaussianNoise:
     """
     def __init__(self, duration=None, noise=None, psd=None, psdfreq=None, sf=None, random_seed=None):
         self.duration = duration  # May be corrected after calling _gen_noise()
-        self.noise = np.asarray(noise) if duration is not None else None
+        self.noise = np.asarray(noise) if noise is not None else None
         self.psd = psd
         self.psdfreq = psdfreq
         self.sf = sf
