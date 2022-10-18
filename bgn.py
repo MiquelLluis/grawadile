@@ -146,8 +146,8 @@ class NonwhiteGaussianNoise:
         """Interpolates the PSD."""
         return np.interp(f, *self.psd, left=margins, right=margins)
 
-    def amplitude(self, f):
-        """Noise amplitude."""
+    def compute_asd(self, f):
+        """Interpolates the ASD."""
         return np.sqrt(self.compute_psd(f))
 
     def snr(self, x):
