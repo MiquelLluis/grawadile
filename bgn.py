@@ -20,6 +20,8 @@ class NonwhiteGaussianNoise:
 
     psd : array-like, optional
         Power Spectral Density of the non-white part of the noise.
+        Can be provided along its frequencies in a 2d-array in fortran order
+        with colums [freqs, psd].
 
     psdfreqs : array-like, optional
         Frequencies of the psd.
@@ -49,7 +51,7 @@ class NonwhiteGaussianNoise:
         self._check_initial_parameters()
 
         if psdfreq is None:
-            self.psd, self.psdfreq = psd
+            self.psdfreq, self.psd = psd
         
         # Generate new noise.
         if duration is not None:
