@@ -18,8 +18,11 @@ class NonwhiteGaussianNoise:
     noise : array-like, optional
         Alternative noise array already generated.
 
-    psd : 2d array-like, (frequency points, psd samples)
+    psd : array-like, optional
         Power Spectral Density of the non-white part of the noise.
+
+    psdfreqs : array-like, optional
+        Frequencies of the psd.
 
     sf : int
         Sample frequency of the signal.
@@ -35,14 +38,18 @@ class NonwhiteGaussianNoise:
         Duration of the noise in seconds.
 
     """
-    def __init__(self, duration=None, noise=None, psd=None, sf=None, random_seed=None):
+    def __init__(self, duration=None, noise=None, psd=None, psdfreq=None, sf=None, random_seed=None):
         self.duration = duration  # May be corrected after calling _gen_noise()
-        self.noise = np.asarray(noise) if duration is None else None
+        self.noise = np.asarray(noise) if duration is not None else None
         self.psd = psd
+        self.psdfreq = psdfreq
         self.sf = sf
         self.random_seed = random_seed
 
         self._check_initial_parameters()
+
+        if psdfreq is None:
+            self.psd, self.psdfreq = psd
         
         # Generate new noise.
         if duration is not None:
@@ -144,7 +151,7 @@ class NonwhiteGaussianNoise:
 
     def compute_psd(self, f, margins=np.inf):
         """Interpolates the PSD."""
-        return np.interp(f, *self.psd, left=margins, right=margins)
+        return np.interp(f, self.psdfreq, self.psd, left=margins, right=margins)
 
     def compute_asd(self, f, margins=np.inf):
         """Interpolates the ASD."""
@@ -187,6 +194,8 @@ class NonwhiteGaussianNoise:
         # Check required arguments.
         if self.psd is None:
             raise TypeError("'psd' must be provided")
+        if self.psdfreq is None and self.psd.ndim != 2:
+            raise TypeError("'psdfreq' must be provided")
         if self.sf is None:
             raise TypeError("'sf' must be provided")
 
