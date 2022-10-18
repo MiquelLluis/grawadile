@@ -111,9 +111,9 @@ class NonwhiteGaussianNoise:
             raise ValueError("'x' is larger than the noise array")
 
         if snr_lim is None:
-            scale = snr / self.snr(x, at=1/sf)
+            scale = snr / self.snr(x)
         else:
-            scale = snr / self.snr(x[slice(*snr_lim)], at=1/sf)
+            scale = snr / self.snr(x[slice(*snr_lim)])
 
         x_noisy = x * scale + self.noise[pos:pos+n]
 
@@ -144,7 +144,7 @@ class NonwhiteGaussianNoise:
             Rescaled signal.
 
         """
-        factor = snr / self.snr(x, at=1/sf)
+        factor = snr / self.snr(x)
         x_new = x * factor
 
         return (x_new, factor)
